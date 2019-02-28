@@ -11,3 +11,8 @@ class TestResConfig:
     def test_register(self):
         config = ResConfig(self.default)
         config.register("b.c", lambda x: x)
+
+    def test_update(self):
+        config = ResConfig(self.default)
+        config.update({"b": {"d": -1}})
+        assert config.get("b.d") == -1

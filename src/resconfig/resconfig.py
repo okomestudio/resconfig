@@ -1,3 +1,6 @@
+REMOVE = object()
+
+
 def _normkey(key) -> list:
     return key.split(".") if isinstance(key, str) else key
 
@@ -45,18 +48,18 @@ class ResConfig:
     def reload(self):
         pass
 
-    def set(self, key, value):
-        ks = _normkey(key)
-        d = self._d
-        for k in ks[:-1]:
-            d = d[k]
-        d[ks[-1]] = value
+    def _update(self, dic, new, cbs):
+        for k, v in new.items():
+            if isinstance(v, dict):
+                self._update(dic.setdefault(k, {}), v, cbs[k] if k in cbs else {})
+            else:
+                if v is REMOVE:
+                    del dic[k]
+                else:
+                    dic[k] = v
 
-        r = self._reloaders
-        for k in ks:
-            if k not in r:
-                break
-            r = r[k]
-            if self.reloaderkey in r:
-                for func in r[self.reloaderkey]:
-                    func(self)
+            if k in cbs and self.reloaderkey in cbs[k]:
+                cbs[k][self.reloaderkey](v)
+
+    def update(self, new):
+        self._update(self._d, new, self._reloaders)
