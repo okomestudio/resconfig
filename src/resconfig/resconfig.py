@@ -1,18 +1,50 @@
+from collections import OrderedDict as dicttype
+from copy import deepcopy
+from enum import Enum
+from functools import wraps
+from typing import Any
+from typing import Callable
+from typing import Optional
+from typing import Tuple
+from typing import Union
+
+
+missing = object()
+"""Sentinel value for missing value."""
+
 REMOVE = object()
+"""Sentinel value indicating the config field to be removed."""
 
 
-def _normkey(key) -> list:
-    return key.split(".") if isinstance(key, str) else key
+class Action(Enum):
+    """Action performed by the update method."""
+
+    ADDED = 1
+    MODIFIED = 2
+    REMOVED = 3
+    RELOADED = 4
+
+
+# Custom types
+
+Reloader = Callable[[Action, Any, Any], None]
+Key = Union[str, Tuple[str]]
+
+
+def _normkey(key: Key) -> list:
+    return tuple(key.split(".")) if isinstance(key, str) else key
 
 
 class ResConfig:
+    """Resource Configuration."""
+
     reloaderkey = "__reloader__"
 
     def __init__(self, default=None):
-        self._d = default or {}
-        self._reloaders = {}
+        self._conf = deepcopy(default) or dicttype()
+        self._reloaders = dicttype()
 
-    def deregister(self, key, func=None):
+    def deregister(self, key: Key, func: Optional[Reloader] = None):
         r = self._reloaders
         for k in _normkey(key):
             r = r[k]
@@ -23,10 +55,17 @@ class ResConfig:
             if len(r[self.reloaderkey]) == 0:
                 del r[self.reloaderkey]
 
-    def get(self, key):
-        d = self._d
+    def get(self, key: Key, default=missing):
+        """Get the config item at the key."""
+        d = self._conf
         for k in _normkey(key):
-            d = d[k]
+            try:
+                d = d[k]
+            except KeyError:
+                if default is missing:
+                    raise
+                else:
+                    return default
         return d
 
     def load(self, filename):
@@ -35,31 +74,72 @@ class ResConfig:
     def load_from_dict(self, dic):
         pass
 
-    def register(self, key, func):
-        # d = self._d
+    def register(self, key: Key, func: Reloader):
+        """Register a reloader function to key."""
         r = self._reloaders
         for k in _normkey(key):
-            # if k not in d:
-            #     raise ValueError(f"{k} is not a valid config item")
-            # d = d[k]
-            r = r.setdefault(k, {})
+            r = r.setdefault(k, dicttype())
         r.setdefault(self.reloaderkey, []).append(func)
 
+    def _reload(self, reloaders, key, action, oldval, newval):
+        if key in reloaders and self.reloaderkey in reloaders[key]:
+            for func in reloaders[key][self.reloaderkey]:
+                func(action, oldval, newval)
+
     def reload(self):
-        pass
+        """Trigger all registered reloaders using the current config."""
+        for key, val in self._conf.items():
+            self._reload(self._reloaders, key, Action.RELOADED, val, val)
 
-    def _update(self, dic, new, cbs):
-        for k, v in new.items():
-            if isinstance(v, dict):
-                self._update(dic.setdefault(k, {}), v, cbs[k] if k in cbs else {})
-            else:
-                if v is REMOVE:
-                    del dic[k]
+    def reloader(self, key: Key) -> Reloader:
+        """Decorate a reloader function."""
+
+        def deco(f):
+            @wraps(f)
+            def _deco(*args, **kwargs):
+                return f(*args, **kwargs)
+
+            self.register(key, _deco)
+            return _deco
+
+        return deco
+
+    def _update(self, conf, newconf, reloaders, reload=True):
+        for key, newval in newconf.items():
+            action = None
+
+            if isinstance(newval, dict):
+                oldval = deepcopy(conf[key]) if key in conf else None
+                self._update(
+                    conf.setdefault(key, dicttype()),
+                    newval,
+                    reloaders[key] if key in reloaders else dicttype(),
+                    reload=reload,
+                )
+                if key in conf:
+                    if oldval != newval:
+                        action = Action.MODIFIED
                 else:
-                    dic[k] = v
+                    action = Action.ADDED
 
-            if k in cbs and self.reloaderkey in cbs[k]:
-                cbs[k][self.reloaderkey](v)
+            else:
+                if key in conf:
+                    oldval = deepcopy(conf[key])
+                    if newval is REMOVE:
+                        action = Action.REMOVED
+                        del conf[key]
+                    elif oldval != newval:
+                        action = Action.MODIFIED
+                        conf[key] = newval
+                else:
+                    oldval = None
+                    if newval is not REMOVE:
+                        action = Action.ADDED
+                        conf[key] = newval
 
-    def update(self, new):
-        self._update(self._d, new, self._reloaders)
+            if reload:
+                self._reload(reloaders, key, action, oldval, newval)
+
+    def update(self, newconf: dicttype, reload: bool = True):
+        """Update config."""
+        self._update(self._conf, newconf, self._reloaders, reload=reload)
