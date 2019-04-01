@@ -4,6 +4,7 @@ from enum import Enum
 from functools import wraps
 from typing import Any
 from typing import Callable
+from typing import Generator
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -31,8 +32,12 @@ Reloader = Callable[[Action, Any, Any], None]
 Key = Union[str, Tuple[str]]
 
 
-def _normkey(key: Key) -> list:
-    return tuple(key.split(".")) if isinstance(key, str) else key
+def _normkey(key: Key) -> Generator[str, None, None]:
+    if isinstance(key, str):
+        for k in key.split("."):
+            yield k
+    else:
+        yield key
 
 
 class ResConfig:
