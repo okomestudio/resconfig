@@ -65,7 +65,7 @@ setup(
         "License :: OSI Approved :: MIT",
         "Programming Language :: Python",
         "Programming Language :: Python :: 3.7",
-        "Programming Language :: Python :: Implementation :: CPython ",
+        "Programming Language :: Python :: Implementation :: CPython",
     ],
     packages=find_packages("src"),
     package_data={"": ["LICENSE"]},
