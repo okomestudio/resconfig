@@ -77,4 +77,5 @@ setup(
     cmdclass={"test": PyTest},
     install_requires=requires,
     tests_require=test_requires,
+    extras_require={"test": test_requires},
 )

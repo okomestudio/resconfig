@@ -20,7 +20,7 @@ jobs:
           command: |
             python3 -m venv venv || virtualenv venv
             . venv/bin/activate
-            python setup.py install
+            pip install -e .[test]
       - save_cache:
           paths:
             - ./venv
