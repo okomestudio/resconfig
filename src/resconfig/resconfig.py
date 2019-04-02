@@ -109,7 +109,7 @@ class ResConfig:
 
         return deco
 
-    def _update(self, conf, newconf, reloaders, reload=True):
+    def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
         for key, newval in newconf.items():
             action = None
 
@@ -145,6 +145,13 @@ class ResConfig:
             if reload:
                 self._reload(reloaders, key, action, oldval, newval)
 
-    def update(self, newconf: dicttype, reload: bool = True):
+    # def update(self, newconf: dicttype, reload: bool = True):
+    def update(self, reload: bool = True, *args, **kwargs):
         """Update config."""
+        if args and isinstance(args[0], dict):
+            newconf = args[0]
+        elif kwargs:
+            newconf = kwargs
+        else:
+            raise ValueError("Invalid input args")
         self._update(self._conf, newconf, self._reloaders, reload=reload)
