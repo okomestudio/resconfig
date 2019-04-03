@@ -2,12 +2,13 @@ from collections import OrderedDict as dicttype
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
-from typing import Any
-from typing import Callable
-from typing import Generator
-from typing import Optional
-from typing import Tuple
-from typing import Union
+
+from .typing import Any
+from .typing import Callable
+from .typing import Key
+from .typing import Optional
+from .utils import normkey
+from .utils import expand
 
 
 missing = object()
@@ -26,32 +27,15 @@ class Action(Enum):
     RELOADED = 4
 
 
-# Custom types
-
 Reloader = Callable[[Action, Any, Any], None]
-Key = Union[str, Tuple[str]]
 
 
-def _normkey(key: Key) -> Generator[str, None, None]:
-    if isinstance(key, str):
-        for k in key.split("."):
-            yield k
-    else:
-        yield key
-
-
-class ResConfig:
-    """Resource Configuration."""
-
-    reloaderkey = "__reloader__"
-
-    def __init__(self, default=None):
-        self._conf = deepcopy(default) or dicttype()
-        self._reloaders = dicttype()
+class _Reloadable:
+    """Mix-in for adding the reloader functionality."""
 
     def deregister(self, key: Key, func: Optional[Reloader] = None):
         r = self._reloaders
-        for k in _normkey(key):
+        for k in normkey(key):
             r = r[k]
         if func is None:
             del r[self.reloaderkey]
@@ -60,29 +44,10 @@ class ResConfig:
             if len(r[self.reloaderkey]) == 0:
                 del r[self.reloaderkey]
 
-    def get(self, key: Key, default=missing):
-        """Get the config item at the key."""
-        d = self._conf
-        for k in _normkey(key):
-            try:
-                d = d[k]
-            except KeyError:
-                if default is missing:
-                    raise
-                else:
-                    return default
-        return d
-
-    def load(self, filename):
-        pass
-
-    def load_from_dict(self, dic):
-        pass
-
     def register(self, key: Key, func: Reloader):
         """Register a reloader function to key."""
         r = self._reloaders
-        for k in _normkey(key):
+        for k in normkey(key):
             r = r.setdefault(k, dicttype())
         r.setdefault(self.reloaderkey, []).append(func)
 
@@ -108,6 +73,35 @@ class ResConfig:
             return _deco
 
         return deco
+
+
+class ResConfig(_Reloadable):
+    """Resource Configuration."""
+
+    reloaderkey = "__reloader__"
+
+    def __init__(self, default=None):
+        self._conf = deepcopy(default) or dicttype()
+        self._reloaders = dicttype()
+
+    def get(self, key: Key, default=missing):
+        """Get the config item at the key."""
+        d = self._conf
+        for k in normkey(key):
+            try:
+                d = d[k]
+            except KeyError:
+                if default is missing:
+                    raise
+                else:
+                    return default
+        return d
+
+    def load(self, filename):
+        pass
+
+    def load_from_dict(self, dic):
+        pass
 
     def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
         for key, newval in newconf.items():
@@ -145,8 +139,7 @@ class ResConfig:
             if reload:
                 self._reload(reloaders, key, action, oldval, newval)
 
-    # def update(self, newconf: dicttype, reload: bool = True):
-    def update(self, reload: bool = True, *args, **kwargs):
+    def update(self, *args, reload: bool = True, **kwargs):
         """Update config."""
         if args and isinstance(args[0], dict):
             newconf = args[0]
@@ -154,4 +147,5 @@ class ResConfig:
             newconf = kwargs
         else:
             raise ValueError("Invalid input args")
+        newconf = expand(newconf)
         self._update(self._conf, newconf, self._reloaders, reload=reload)

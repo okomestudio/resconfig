@@ -12,16 +12,19 @@ def default_config():
     yield {"a": 1, "b": {"c": 2}}
 
 
-class TestResConfig:
+@pytest.fixture
+def rc(default_config):
+    yield ResConfig(default_config)
+
+
+class TestCase:
     @pytest.fixture(scope="function", autouse=True)
     def setup(self, request, default_config):
         request.instance.default = default_config
         yield
 
-    def test(self):
-        config = ResConfig(self.default)
-        assert config.get("b.c") == self.default["b"]["c"]
 
+class TestReloadable(TestCase):
     def test_register(self):
         config = ResConfig(self.default)
         cb = mock.Mock()
@@ -50,13 +53,36 @@ class TestResConfig:
         config.reload()
         called.assert_called_with(Action.RELOADED, self.default["b"], self.default["b"])
 
-    def test_update(self):
-        config = ResConfig(self.default)
-        config.update({"b": {"d": -1}})
-        assert config.get("b.d") == -1
 
-    def test_update_delete_field(self):
+class TestResConfig(TestCase):
+    def test(self):
         config = ResConfig(self.default)
-        assert "a" in config._conf
-        config.update({"a": REMOVE})
-        assert "a" not in config._conf
+        assert config.get("b.c") == self.default["b"]["c"]
+
+
+class TestUpdate(TestCase):
+    def test_keys_with_dict_notation(self, rc):
+        rc.update({"b": {"d": -1}})
+        assert rc.get("b.d") == -1
+
+    def test_keys_with_kwargs(self, rc):
+        rc.update(d=-2, e=-3)
+        assert rc.get("d") == -2
+        assert rc.get("e") == -3
+
+    def test_key_with_dot_notation(self, rc):
+        rc.update({"b.d": -1})
+        assert rc.get("b.d") == -1
+
+    def test_key_with_tuple_notation(self, rc):
+        rc.update({("b", "d"): -1})
+        assert rc.get("b.d") == -1
+
+    def test_update_delete_field(self, rc):
+        assert "a" in rc._conf
+        rc.update(a=REMOVE)
+        assert "a" not in rc._conf
+
+    def test_invalid_args(self, rc):
+        with pytest.raises(ValueError):
+            rc.update(3)
