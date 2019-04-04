@@ -1,4 +1,5 @@
 from collections import OrderedDict as dicttype
+from collections.abc import MutableMapping
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
@@ -100,6 +101,16 @@ class ResConfig(_Reloadable):
         self._conf = deepcopy(default) or dicttype()
         self._reloaders = dicttype()
 
+    def __contains__(self, key):
+        r = self._conf
+        for k in normkey(key):
+            if not isinstance(r, MutableMapping):
+                return False
+            if k not in r:
+                return False
+            r = r[k]
+        return True
+
     def get(self, key: Key, default=missing):
         """Get the config item at the key."""
         d = self._conf
@@ -121,13 +132,21 @@ class ResConfig(_Reloadable):
 
     def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
         for key, newval in newconf.items():
+            # print(f"Iterating over {key!r}={newval!r}: {conf!r}")
             action = None
 
-            if isinstance(newval, dict):
+            if isinstance(newval, MutableMapping):
                 key_in_old_conf = key in conf
                 oldval = deepcopy(conf[key]) if key_in_old_conf else None
+
+                if key not in conf:
+                    conf[key] = dicttype()
+                else:
+                    if not isinstance(conf[key], MutableMapping):
+                        conf[key] = dicttype()
+
                 self._update(
-                    conf.setdefault(key, dicttype()),
+                    conf[key],
                     newval,
                     reloaders[key] if key in reloaders else dicttype(),
                     reload=reload,
@@ -158,11 +177,12 @@ class ResConfig(_Reloadable):
 
     def update(self, *args, reload: bool = True, **kwargs):
         """Update config."""
-        if args and isinstance(args[0], dict):
+        if args and isinstance(args[0], MutableMapping):
             newconf = args[0]
         elif kwargs:
             newconf = kwargs
         else:
             raise ValueError("Invalid input args")
         newconf = expand(newconf)
+        print(f"newconf = {newconf!r}")
         self._update(self._conf, newconf, self._reloaders, reload=reload)

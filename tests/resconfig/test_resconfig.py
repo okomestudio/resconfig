@@ -5,6 +5,7 @@ import pytest
 from resconfig.resconfig import Action
 from resconfig.resconfig import REMOVE
 from resconfig.resconfig import ResConfig
+from resconfig.utils import normkey
 
 
 @pytest.fixture
@@ -94,6 +95,10 @@ class TestLoad(TestCase):
 
 
 class TestUpdate(TestCase):
+    @pytest.mark.parametrize("key, expected", [("a", True), ("z", False)])
+    def test_key_existence(self, rc, key, expected):
+        assert (key in rc) is expected
+
     def test_keys_with_dict_notation(self, rc):
         rc.update({"b": {"d": -1}})
         assert rc.get("b.d") == -1
@@ -112,15 +117,28 @@ class TestUpdate(TestCase):
         assert rc.get("b.d") == -1
 
     @pytest.mark.parametrize("trial", [123, {"z": 3}])
-    def test_add(self, rc, trial):
+    def test_added(self, rc, trial):
         assert "n" not in rc._conf
         reloader = mock.Mock()
         rc.register("n", reloader)
         rc.update(n=trial)
-        assert rc._conf["n"] == trial
+        assert rc.get("n") == trial
         reloader.assert_called_with(Action.ADDED, None, trial)
 
-    def test_delete_field(self, rc):
+    @pytest.mark.parametrize(
+        "key, newval",
+        [("a", 5), ("b.c", 5), ("b.c", {"d": 5})],  # , ("b.c", {"d.e": 5})]
+    )
+    def test_modified(self, rc, key, newval):
+        assert key in rc
+        oldval = rc.get(key)
+        reloader = mock.Mock()
+        rc.register(key, reloader)
+        rc.update({key: newval})
+        assert rc.get(key) == newval
+        reloader.assert_called_with(Action.MODIFIED, oldval, newval)
+
+    def test_removed(self, rc):
         assert "a" in rc._conf
         reloader = mock.Mock()
         rc.register("a", reloader)
