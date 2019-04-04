@@ -132,7 +132,6 @@ class ResConfig(_Reloadable):
 
     def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
         for key, newval in newconf.items():
-            # print(f"Iterating over {key!r}={newval!r}: {conf!r}")
             action = None
 
             if isinstance(newval, MutableMapping):
@@ -184,5 +183,4 @@ class ResConfig(_Reloadable):
         else:
             raise ValueError("Invalid input args")
         newconf = expand(newconf)
-        print(f"newconf = {newconf!r}")
         self._update(self._conf, newconf, self._reloaders, reload=reload)

@@ -1,3 +1,4 @@
+from collections.abc import MutableMapping
 from unittest import mock
 
 import pytest
@@ -5,7 +6,7 @@ import pytest
 from resconfig.resconfig import Action
 from resconfig.resconfig import REMOVE
 from resconfig.resconfig import ResConfig
-from resconfig.utils import normkey
+from resconfig.utils import expand
 
 
 @pytest.fixture
@@ -23,6 +24,15 @@ class TestCase:
     def setup(self, request, default_config):
         request.instance.default = default_config
         yield
+
+
+class TestBasicAPI(TestCase):
+    @pytest.mark.parametrize(
+        "key, expected",
+        [("a", True), ("b.c", True), ("a.c", False), ("z", False), ("x.y.z", False)],
+    )
+    def test_contains(self, rc, key, expected):
+        assert (key in rc) is expected
 
 
 class TestReloadable(TestCase):
@@ -116,6 +126,12 @@ class TestUpdate(TestCase):
         rc.update({("b", "d"): -1})
         assert rc.get("b.d") == -1
 
+    def test_invalid_args(self, rc):
+        with pytest.raises(ValueError):
+            rc.update(3)
+
+
+class TestReloaderTrigger(TestCase):
     @pytest.mark.parametrize("trial", [123, {"z": 3}])
     def test_added(self, rc, trial):
         assert "n" not in rc._conf
@@ -126,8 +142,7 @@ class TestUpdate(TestCase):
         reloader.assert_called_with(Action.ADDED, None, trial)
 
     @pytest.mark.parametrize(
-        "key, newval",
-        [("a", 5), ("b.c", 5), ("b.c", {"d": 5})],  # , ("b.c", {"d.e": 5})]
+        "key, newval", [("a", 5), ("b.c", 5), ("b.c", {"d": 5}), ("b.c", {"d.e": 5})]
     )
     def test_modified(self, rc, key, newval):
         assert key in rc
@@ -135,8 +150,9 @@ class TestUpdate(TestCase):
         reloader = mock.Mock()
         rc.register(key, reloader)
         rc.update({key: newval})
-        assert rc.get(key) == newval
-        reloader.assert_called_with(Action.MODIFIED, oldval, newval)
+        expanded = expand(newval) if isinstance(newval, MutableMapping) else newval
+        assert rc.get(key) == expanded
+        reloader.assert_called_with(Action.MODIFIED, oldval, expanded)
 
     def test_removed(self, rc):
         assert "a" in rc._conf
@@ -145,7 +161,3 @@ class TestUpdate(TestCase):
         rc.update(a=REMOVE)
         assert "a" not in rc._conf
         reloader.assert_called_with(Action.REMOVED, 1, REMOVE)
-
-    def test_invalid_args(self, rc):
-        with pytest.raises(ValueError):
-            rc.update(3)
