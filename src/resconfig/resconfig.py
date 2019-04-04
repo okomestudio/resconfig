@@ -2,6 +2,7 @@ from collections import OrderedDict as dicttype
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
+from logging import getLogger
 
 from .typing import Any
 from .typing import Callable
@@ -9,6 +10,9 @@ from .typing import Key
 from .typing import Optional
 from .utils import normkey
 from .utils import expand
+
+
+log = getLogger(__name__)
 
 
 missing = object()
@@ -33,19 +37,33 @@ Reloader = Callable[[Action, Any, Any], None]
 class _Reloadable:
     """Mix-in for adding the reloader functionality."""
 
+    reloaderkey = "__reloader__"
+
     def deregister(self, key: Key, func: Optional[Reloader] = None):
+        """Deregister the reloader function for the key."""
         r = self._reloaders
-        for k in normkey(key):
-            r = r[k]
+        try:
+            for k in normkey(key):
+                r = r[k]
+        except KeyError:
+            raise KeyError(f"Reloader not registered at {key}")
+
         if func is None:
-            del r[self.reloaderkey]
+            if self.reloaderkey in r:
+                del r[self.reloaderkey]
         else:
-            r[self.reloaderkey].remove(func)
+            try:
+                r[self.reloaderkey].remove(func)
+            except KeyError:
+                raise KeyError(f"Reloaders not registered at {key}")
+            except ValueError:
+                raise ValueError(f"{func!r} not registered at {key}")
+            # If this was the last reloader, remove the node entirely.
             if len(r[self.reloaderkey]) == 0:
                 del r[self.reloaderkey]
 
     def register(self, key: Key, func: Reloader):
-        """Register a reloader function to key."""
+        """Register the reloader function for the key."""
         r = self._reloaders
         for k in normkey(key):
             r = r.setdefault(k, dicttype())
@@ -78,8 +96,6 @@ class _Reloadable:
 class ResConfig(_Reloadable):
     """Resource Configuration."""
 
-    reloaderkey = "__reloader__"
-
     def __init__(self, default=None):
         self._conf = deepcopy(default) or dicttype()
         self._reloaders = dicttype()
@@ -108,14 +124,15 @@ class ResConfig(_Reloadable):
             action = None
 
             if isinstance(newval, dict):
-                oldval = deepcopy(conf[key]) if key in conf else None
+                key_in_old_conf = key in conf
+                oldval = deepcopy(conf[key]) if key_in_old_conf else None
                 self._update(
                     conf.setdefault(key, dicttype()),
                     newval,
                     reloaders[key] if key in reloaders else dicttype(),
                     reload=reload,
                 )
-                if key in conf:
+                if key_in_old_conf:
                     if oldval != newval:
                         action = Action.MODIFIED
                 else:

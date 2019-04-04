@@ -25,39 +25,72 @@ class TestCase:
 
 
 class TestReloadable(TestCase):
-    def test_register(self):
-        config = ResConfig(self.default)
+    def test_deregister_from_nonexisting_key(self, rc):
+        with pytest.raises(KeyError):
+            rc.deregister("b.c")
+
+    def test_deregister_nonexisting_reloader(self, rc):
+        rc.register("b.c", lambda *args: args)
+        with pytest.raises(ValueError):
+            rc.deregister("b.c", lambda *args: args)
+
+    def test_deregister_all(self, rc):
+        def f(*args):
+            return args
+
+        rc.register("b.c", f)
+        rc.deregister("b.c")
+        with pytest.raises(KeyError):
+            rc.deregister("b.c", f)
+
+    def test_deregister_last_reloader(self, rc):
+        def f(*args):
+            return args
+
+        rc.register("b.c", f)
+        rc.deregister("b.c", f)
+        with pytest.raises(KeyError):
+            rc.deregister("b.c", f)
+
+    def test_register(self, rc):
         cb = mock.Mock()
-        config.register("b.c", cb)
-        config.update({"b": {"c": -1}})
+        rc.register("b.c", cb)
+        rc.update({"b": {"c": -1}})
         cb.assert_called_with(Action.MODIFIED, self.default["b"]["c"], -1)
 
-    def test_register_with_dictval(self):
-        config = ResConfig(self.default)
+    def test_register_with_dictval(self, rc):
         cb = mock.Mock()
-        config.register("b", cb)
-        config.update({"b": {"d": 4}})
+        rc.register("b", cb)
+        rc.update({"b": {"d": 4}})
         cb.assert_called_with(Action.MODIFIED, self.default["b"], {"d": 4})
 
-    def test_reloader(self):
-        config = ResConfig(self.default)
-
+    def test_reload(self, rc):
         called = mock.Mock()
 
-        @config.reloader("b")
+        @rc.reloader("b")
         def reloader_func(*args, **kwargs):
             called(*args, **kwargs)
 
-        assert reloader_func in config._reloaders["b"][config.reloaderkey]
+        assert reloader_func in rc._reloaders["b"][rc.reloaderkey]
 
-        config.reload()
+        rc.reload()
         called.assert_called_with(Action.RELOADED, self.default["b"], self.default["b"])
 
 
-class TestResConfig(TestCase):
-    def test(self):
-        config = ResConfig(self.default)
-        assert config.get("b.c") == self.default["b"]["c"]
+class TestGet(TestCase):
+    def test(self, rc):
+        assert rc.get("b.c") == self.default["b"]["c"]
+
+    def test_default(self, rc):
+        assert rc.get("non", "default") == "default"
+
+    def test_without_default(self, rc):
+        with pytest.raises(KeyError):
+            rc.get("non")
+
+
+class TestLoad(TestCase):
+    pass
 
 
 class TestUpdate(TestCase):
@@ -78,10 +111,22 @@ class TestUpdate(TestCase):
         rc.update({("b", "d"): -1})
         assert rc.get("b.d") == -1
 
-    def test_update_delete_field(self, rc):
+    @pytest.mark.parametrize("trial", [123, {"z": 3}])
+    def test_add(self, rc, trial):
+        assert "n" not in rc._conf
+        reloader = mock.Mock()
+        rc.register("n", reloader)
+        rc.update(n=trial)
+        assert rc._conf["n"] == trial
+        reloader.assert_called_with(Action.ADDED, None, trial)
+
+    def test_delete_field(self, rc):
         assert "a" in rc._conf
+        reloader = mock.Mock()
+        rc.register("a", reloader)
         rc.update(a=REMOVE)
         assert "a" not in rc._conf
+        reloader.assert_called_with(Action.REMOVED, 1, REMOVE)
 
     def test_invalid_args(self, rc):
         with pytest.raises(ValueError):
