@@ -29,12 +29,13 @@ class TestExpand:
                 {("a", "b", "c"): 1, "a": {"b": {"d": 2}}},
                 {"a": {"b": {"c": 1, "d": 2}}},
             ),
+            ({"a.b": {"c.d": 1}}, {"a": {"b": {"c": {"d": 1}}}}),
         ],
     )
     def test(self, trial, expected):
         assert expand(trial) == expected
 
-    @pytest.mark.parametrize("trial", [{"a": 1, "a.b": 2}])
+    @pytest.mark.parametrize("trial", [{"a": 1, "a.b": 2}, {"a.b": 1, "a.b.c": 2}])
     def test_inconsistent(self, trial):
         with pytest.raises(ValueError) as exc:
             expand(trial)
