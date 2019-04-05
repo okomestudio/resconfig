@@ -1,4 +1,6 @@
+import os
 from collections.abc import MutableMapping
+from tempfile import NamedTemporaryFile
 from unittest import mock
 
 import pytest
@@ -7,6 +9,10 @@ from resconfig.resconfig import Action
 from resconfig.resconfig import REMOVE
 from resconfig.resconfig import ResConfig
 from resconfig.utils import expand
+
+
+def reloaderfunc(*args):
+    return args
 
 
 @pytest.fixture
@@ -19,6 +25,14 @@ def rc(default_config):
     yield ResConfig(default_config)
 
 
+@pytest.fixture
+def filename():
+    f = NamedTemporaryFile(delete=False)
+    filename = f.name
+    yield filename
+    os.remove(filename)
+
+
 class TestCase:
     @pytest.fixture(scope="function", autouse=True)
     def setup(self, request, default_config):
@@ -27,6 +41,11 @@ class TestCase:
 
 
 class TestBasicAPI(TestCase):
+    def test_init_with_reloaders(self):
+        key = "a"
+        rc = ResConfig(reloaders={key: reloaderfunc})
+        assert reloaderfunc in rc._reloaders[key][rc.reloaderkey]
+
     @pytest.mark.parametrize(
         "key, expected",
         [("a", True), ("b.c", True), ("a.c", False), ("z", False), ("x.y.z", False)],
@@ -88,6 +107,35 @@ class TestReloadable(TestCase):
         called.assert_called_with(Action.RELOADED, self.default["b"], self.default["b"])
 
 
+class TestIO(TestCase):
+    def test_from_dict(self, rc):
+        rc.read_from_dict(self.default)
+        assert rc._conf == expand(self.default)
+
+    def test_from_json(self, rc, filename):
+        rc.save_to_json(filename)
+        with open(filename) as f:
+            content = f.read()
+        assert '{"a": 1' in content
+
+        rc = ResConfig()
+        rc.read_from_json(filename)
+        assert "b.c" in rc
+        assert rc.get("b.c") == self.default["b"]["c"]
+
+    def test_from_yaml(self, rc, filename):
+        rc.save_to_yaml(filename)
+        with open(filename) as f:
+            content = f.read()
+        print(content)
+        assert "a: 1" in content
+
+        rc = ResConfig()
+        rc.read_from_yaml(filename)
+        assert "b.c" in rc
+        assert rc.get("b.c") == self.default["b"]["c"]
+
+
 class TestGet(TestCase):
     def test(self, rc):
         assert rc.get("b.c") == self.default["b"]["c"]
@@ -98,10 +146,6 @@ class TestGet(TestCase):
     def test_without_default(self, rc):
         with pytest.raises(KeyError):
             rc.get("non")
-
-
-class TestLoad(TestCase):
-    pass
 
 
 class TestUpdate(TestCase):

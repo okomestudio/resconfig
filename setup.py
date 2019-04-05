@@ -40,7 +40,7 @@ def meta(category, fpath="src/resconfig/__init__.py"):
     raise Exception("Meta info string for {} undefined".format(category))
 
 
-requires = []
+requires = ["PyYAML>=5.1"]
 
 test_requires = [
     "black==18.9b0",

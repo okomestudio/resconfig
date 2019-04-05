@@ -5,6 +5,8 @@ from enum import Enum
 from functools import wraps
 from logging import getLogger
 
+from . import json
+from . import yaml
 from .typing import Any
 from .typing import Callable
 from .typing import Key
@@ -94,12 +96,42 @@ class _Reloadable:
         return deco
 
 
-class ResConfig(_Reloadable):
+class _IO:
+    def read_from_dict(self, dic):
+        self._conf = dicttype()
+        self.update(dic)
+
+    def read_from_json(self, filename):
+        with open(filename) as f:
+            loaded = json.load(f)
+        self.read_from_dict(loaded)
+
+    def read_from_yaml(self, filename):
+        with open(filename) as f:
+            loaded = yaml.load(f)
+        self.read_from_dict(loaded)
+
+    def save_to_json(self, filename):
+        with open(filename, "w") as f:
+            json.dump(self._conf, f)
+
+    def save_to_yaml(self, filename):
+        with open(filename, "w") as f:
+            yaml.dump(self._conf, f)
+
+
+class ResConfig(_Reloadable, _IO):
     """Resource Configuration."""
 
-    def __init__(self, default=None):
-        self._conf = deepcopy(default) or dicttype()
+    def __init__(self, default=None, reloaders=None):
         self._reloaders = dicttype()
+        if reloaders:
+            for k, v in reloaders.items():
+                self.register(k, v)
+
+        self._conf = dicttype()
+        if default:
+            self.update(default)
 
     def __contains__(self, key):
         r = self._conf
@@ -123,12 +155,6 @@ class ResConfig(_Reloadable):
                 else:
                     return default
         return d
-
-    def load(self, filename):
-        pass
-
-    def load_from_dict(self, dic):
-        pass
 
     def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
         for key, newval in newconf.items():
