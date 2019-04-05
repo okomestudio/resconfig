@@ -62,6 +62,7 @@ setup(
     long_description=readme,
     long_description_content_type="text/markdown",
     author=meta("author"),
+    author_email=meta("author_email"),
     url="https://github.com/restlessbandit/resconfig",
     platforms=["Linux"],
     classifiers=[
