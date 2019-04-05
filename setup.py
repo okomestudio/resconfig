@@ -30,7 +30,7 @@ class PyTest(TestCommand):
 
 def meta(category, fpath="src/resconfig/__init__.py"):
     here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, fpath), "r") as f:
+    with codecs.open(os.path.join(here, fpath), "r", encoding="utf-8") as f:
         package_root_file = f.read()
     matched = re.search(
         r"^__{}__\s+=\s+['\"]([^'\"]*)['\"]".format(category), package_root_file, re.M
@@ -40,7 +40,7 @@ def meta(category, fpath="src/resconfig/__init__.py"):
     raise Exception("Meta info string for {} undefined".format(category))
 
 
-with open("README.md", "r", "utf-8") as f:
+with codecs.open("README.md", "r", encoding="utf-8") as f:
     readme = f.read()
 
 
