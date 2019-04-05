@@ -40,6 +40,10 @@ def meta(category, fpath="src/resconfig/__init__.py"):
     raise Exception("Meta info string for {} undefined".format(category))
 
 
+with open("README.md", "r", "utf-8") as f:
+    readme = f.read()
+
+
 requires = ["PyYAML>=5.1"]
 
 test_requires = [
@@ -55,6 +59,8 @@ setup(
     name="resconfig",
     version=meta("version"),
     description="Application resource configuration library for Python",
+    long_description=readme,
+    long_description_content_type="text/markdown",
     author=meta("author"),
     url="https://github.com/restlessbandit/resconfig",
     platforms=["Linux"],
