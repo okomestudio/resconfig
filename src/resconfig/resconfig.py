@@ -11,8 +11,9 @@ from .typing import Any
 from .typing import Callable
 from .typing import Key
 from .typing import Optional
-from .utils import normkey
 from .utils import expand
+from .utils import merge
+from .utils import normkey
 
 
 log = getLogger(__name__)
@@ -176,7 +177,11 @@ class ResConfig(_Reloadable, _IO):
                     reloaders[key] if key in reloaders else dicttype(),
                     reload=reload,
                 )
+
                 if key_in_old_conf:
+                    if isinstance(oldval, MutableMapping):
+                        newval = merge(oldval, newval)
+
                     if oldval != newval:
                         action = Action.MODIFIED
                 else:
@@ -197,7 +202,7 @@ class ResConfig(_Reloadable, _IO):
                         action = Action.ADDED
                         conf[key] = newval
 
-            if reload:
+            if reload and action is not None:
                 self._reload(reloaders, key, action, oldval, newval)
 
     def update(self, *args, reload: bool = True, **kwargs):

@@ -92,7 +92,7 @@ class TestReloadable(TestCase):
         cb = mock.Mock()
         rc.register("b", cb)
         rc.update({"b": {"d": 4}})
-        cb.assert_called_with(Action.MODIFIED, self.default["b"], {"d": 4})
+        cb.assert_called_with(Action.MODIFIED, self.default["b"], {"c": 2, "d": 4})
 
     def test_reload(self, rc):
         called = mock.Mock()
@@ -156,6 +156,7 @@ class TestUpdate(TestCase):
     def test_keys_with_dict_notation(self, rc):
         rc.update({"b": {"d": -1}})
         assert rc.get("b.d") == -1
+        assert rc.get("b") == {"c": 2, "d": -1}
 
     def test_keys_with_kwargs(self, rc):
         rc.update(d=-2, e=-3)
