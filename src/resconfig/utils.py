@@ -1,7 +1,13 @@
 from collections.abc import MutableMapping
 
+from .typing import Any
 from .typing import Generator
 from .typing import Key
+
+
+def isdict(val: Any) -> bool:
+    """Test if the value is dict."""
+    return isinstance(val, MutableMapping)
 
 
 def normkey(key: Key) -> Generator[str, None, None]:
@@ -24,7 +30,7 @@ def merge(d1: dict, d2: dict) -> dict:
     """
     for k, v in d1.items():
         if k in d2:
-            if all(isinstance(e, MutableMapping) for e in (v, d2[k])):
+            if all(isdict(e) for e in (v, d2[k])):
                 d2[k] = merge(v, d2[k])
     d3 = d1.copy()
     d3.update(d2)
@@ -42,14 +48,14 @@ def expand(d: dict) -> dict:
         else:
             for key in keys[:-1]:
                 dnew = dnew.setdefault(key, {})
-                if not isinstance(dnew, MutableMapping):
+                if not isdict(dnew):
                     raise ValueError("Cannot upcast a non-dict node to a dict node")
             key = keys[-1]
 
         if isinstance(v, MutableMapping):
             expanded = expand(v)
             if key in dnew:
-                assert isinstance(dnew[key], MutableMapping)
+                assert isdict(dnew[key])
                 dnew[key] = merge(dnew[key], expanded)
             else:
                 dnew[key] = expanded

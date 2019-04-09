@@ -1,5 +1,4 @@
 from collections import OrderedDict as dicttype
-from collections.abc import MutableMapping
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
@@ -12,6 +11,7 @@ from .typing import Callable
 from .typing import Key
 from .typing import Optional
 from .utils import expand
+from .utils import isdict
 from .utils import merge
 from .utils import normkey
 
@@ -137,7 +137,7 @@ class ResConfig(_Reloadable, _IO):
     def __contains__(self, key):
         r = self._conf
         for k in normkey(key):
-            if not isinstance(r, MutableMapping):
+            if not isdict(r):
                 return False
             if k not in r:
                 return False
@@ -161,14 +161,14 @@ class ResConfig(_Reloadable, _IO):
         for key, newval in newconf.items():
             action = None
 
-            if isinstance(newval, MutableMapping):
+            if isdict(newval):
                 key_in_old_conf = key in conf
                 oldval = deepcopy(conf[key]) if key_in_old_conf else None
 
                 if key not in conf:
                     conf[key] = dicttype()
                 else:
-                    if not isinstance(conf[key], MutableMapping):
+                    if not isdict(conf[key]):
                         conf[key] = dicttype()
 
                 self._update(
@@ -179,7 +179,7 @@ class ResConfig(_Reloadable, _IO):
                 )
 
                 if key_in_old_conf:
-                    if isinstance(oldval, MutableMapping):
+                    if isdict(oldval):
                         newval = merge(oldval, newval)
 
                     if oldval != newval:
@@ -207,7 +207,7 @@ class ResConfig(_Reloadable, _IO):
 
     def update(self, *args, reload: bool = True, **kwargs):
         """Update config."""
-        if args and isinstance(args[0], MutableMapping):
+        if args and isdict(args[0]):
             newconf = args[0]
         elif kwargs:
             newconf = kwargs
