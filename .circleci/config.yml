@@ -1,11 +1,32 @@
-version: 2
+version: 2.1
+
 workflows:
-  version: 2
   test:
     jobs:
-      - test-3.7
+      - test-install:
+          version: "3.7"
+
+  build_and_deploy:
+    jobs:
+      - build:
+          filters:
+            tags:
+              only: /.*/
+      - test-install:
+          version: "3.7"
+          requires:
+            - build
+      - deploy:
+          requires:
+            - build
+          filters:
+            tags:
+              only: /v[0-9]+(\.[0-9]+)*/
+            branches:
+              ignore: /.*/
+
 jobs:
-  test-3.7: &test-template
+  build:
     docker:
       - image: circleci/python:3.7-stretch
     working_directory: ~/repo
@@ -22,9 +43,9 @@ jobs:
             . venv/bin/activate
             pip install -e .[test]
       - save_cache:
+          key: v1-dependencies-{{ checksum "setup.py" }}
           paths:
             - ./venv
-          key: v1-dependencies-{{ checksum "setup.py" }}
       - run:
           name: Run tests
           command: |
@@ -33,3 +54,73 @@ jobs:
       - store_artifacts:
           path: test-reports
           destination: test-reports
+
+  test-install: &test-template
+    parameters:
+      version:
+        type: string
+        default: latest
+    docker:
+      - image: circleci/python:<< parameters.version >>-stretch
+    working_directory: ~/repo
+    steps:
+      - checkout:
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "setup.py" }}
+            - v1-dependencies-
+      - run:
+          name: Install dependencies
+          command: |
+            python3 -m venv venv || virtualenv venv
+            . venv/bin/activate
+            pip install -e .[test]
+      - save_cache:
+          key: v1-dependencies-{{ checksum "setup.py" }}
+          paths:
+            - ./venv
+      - run:
+          name: Run tests
+          command: |
+            . venv/bin/activate
+            python setup.py test
+      - store_artifacts:
+          path: test-reports
+          destination: test-reports
+
+  deploy:
+    docker:
+      - image: circleci/python:3.7
+    steps:
+      - checkout
+      - restore_cache:
+          keys:
+            - v1-dependencies-{{ checksum "setup.py" }}
+            - v1-dependencies-
+      - run:
+          name: Install dependencies
+          command: |
+            python3 -m venv venv || virtualenv venv
+            . venv/bin/activate
+            pip install -e .[test]
+      - save_cache:
+          key: v1-dependencies-{{ checksum "setup.py" }}
+          paths:
+            - ./venv
+      - run:
+          name: Verify git tag vs. version
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            python setup.py verify
+      - run:
+          name: Create distribution package
+          command: |
+            python3 -m venv venv
+            . venv/bin/activate
+            python setup.py sdist bdist_wheel
+      - run:
+          name: Upload to pypi
+          command: |
+            . venv/bin/activate
+            twine upload -r https://test.pypi.org/legacy/ dist/*
