@@ -11,17 +11,24 @@ workflows:
       - build:
           filters:
             tags:
-              only: /.*/
+              only: /^v.*/
+            branches:
+              ignore: /.*/
       - test-install:
           version: "3.7"
           requires:
             - build
+          filters:
+            tags:
+              only: /^v.*/
+            branches:
+              ignore: /.*/
       - deploy:
           requires:
             - build
           filters:
             tags:
-              only: /v[0-9]+(\.[0-9]+)*/
+              only: /^v.*/
             branches:
               ignore: /.*/
 
@@ -31,7 +38,7 @@ jobs:
       - image: circleci/python:3.7-stretch
     working_directory: ~/repo
     steps:
-      - checkout:
+      - checkout
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "setup.py" }}
@@ -64,7 +71,7 @@ jobs:
       - image: circleci/python:<< parameters.version >>-stretch
     working_directory: ~/repo
     steps:
-      - checkout:
+      - checkout
       - restore_cache:
           keys:
             - v1-dependencies-{{ checksum "setup.py" }}
@@ -100,8 +107,9 @@ jobs:
       - run:
           name: Install dependencies
           command: |
-            python3 -m venv venv || virtualenv venv
+            python3 -m venv venv
             . venv/bin/activate
+            pip install -U pip setuptools twine wheel
             pip install -e .[test]
       - save_cache:
           key: v1-dependencies-{{ checksum "setup.py" }}
@@ -123,4 +131,4 @@ jobs:
           name: Upload to pypi
           command: |
             . venv/bin/activate
-            twine upload -r https://test.pypi.org/legacy/ dist/*
+            twine upload --repository-url https://test.pypi.org/legacy/ dist/*
