@@ -6,7 +6,33 @@ import sys
 
 from setuptools import find_packages
 from setuptools import setup
+from setuptools.command.install import install as Install
 from setuptools.command.test import test as TestCommand
+
+
+here = os.path.abspath(os.path.dirname(__file__))
+
+
+def fread(filename):
+    with codecs.open(os.path.join(here, filename), "r", encoding="utf-8") as f:
+        return f.read()
+
+
+def meta(category, fpath="src/resconfig/__init__.py"):
+    package_root_file = fread(fpath)
+    matched = re.search(
+        r"^__{}__\s+=\s+['\"]([^'\"]*)['\"]".format(category), package_root_file, re.M
+    )
+    if matched:
+        return matched.group(1)
+    raise Exception("Meta info string for {} undefined".format(category))
+
+
+version = meta("version")
+author = meta("author")
+author_email = meta("author_email")
+license = meta("license")
+readme = fread("README.md")
 
 
 class PyTest(TestCommand):
@@ -28,20 +54,14 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-def meta(category, fpath="src/resconfig/__init__.py"):
-    here = os.path.abspath(os.path.dirname(__file__))
-    with codecs.open(os.path.join(here, fpath), "r", encoding="utf-8") as f:
-        package_root_file = f.read()
-    matched = re.search(
-        r"^__{}__\s+=\s+['\"]([^'\"]*)['\"]".format(category), package_root_file, re.M
-    )
-    if matched:
-        return matched.group(1)
-    raise Exception("Meta info string for {} undefined".format(category))
+class Verify(Install):
+    description = "Verify that the tag and version match"
 
-
-with codecs.open("README.md", "r", encoding="utf-8") as f:
-    readme = f.read()
+    def run(self):
+        tag = os.getenv("CIRCLE_TAG")
+        if tag != "v" + version:
+            info = "Git tag: {} does not match the version {}".format(tag, version)
+            sys.exit(info)
 
 
 requires = ["PyYAML>=5.1"]
@@ -57,12 +77,12 @@ test_requires = [
 
 setup(
     name="resconfig",
-    version=meta("version"),
+    version=version,
     description="Application resource configuration library for Python",
     long_description=readme,
     long_description_content_type="text/markdown",
-    author=meta("author"),
-    author_email=meta("author_email"),
+    author=author,
+    author_email=author_email,
     url="https://github.com/restlessbandit/resconfig",
     platforms=["Linux"],
     classifiers=[
@@ -79,9 +99,9 @@ setup(
     package_dir={"": "src"},
     include_package_data=True,
     python_requires=">=3.7",
-    license=meta("license"),
+    license=license,
     scripts=[],
-    cmdclass={"test": PyTest},
+    cmdclass={"test": PyTest, "verify": Verify},
     install_requires=requires,
     tests_require=test_requires,
     extras_require={"test": test_requires},
