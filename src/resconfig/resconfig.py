@@ -19,7 +19,7 @@ from .utils import normkey
 log = getLogger(__name__)
 
 
-missing = object()
+_missing = object()
 """Sentinel value for missing value."""
 
 REMOVE = object()
@@ -139,7 +139,7 @@ class ResConfig(_Reloadable, _IO):
             for k, v in reloaders.items():
                 self.register(k, v)
 
-        self._schema = schema or dicttype()
+        self._schema = expand(schema) if schema else dicttype()
 
         self._conf = dicttype()
         if default:
@@ -155,7 +155,7 @@ class ResConfig(_Reloadable, _IO):
             r = r[k]
         return True
 
-    def get(self, key: Key, default=missing):
+    def get(self, key: Key, default=_missing):
         """Get the config item at the key."""
         s = self._schema
         d = self._conf
@@ -164,11 +164,10 @@ class ResConfig(_Reloadable, _IO):
                 s = s.get(k, {})
                 d = d[k]
             except KeyError:
-                if default is missing:
+                if default is _missing:
                     raise
                 else:
-                    d = default
-                    break
+                    return default
 
         if not isdict(s):
             try:

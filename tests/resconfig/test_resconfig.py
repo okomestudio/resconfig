@@ -148,10 +148,20 @@ class TestGet(TestCase):
             rc.get("non")
 
     def test_with_schema(self):
+        key = "a.b"
+        type = int
+        trial = "123"
+        rc = ResConfig(schema={key: type})
+        rc.update({key: trial})
+        v = rc.get(key)
+        assert isinstance(v, type)
+        assert v == type(trial)
+
+    def test_with_schema_with_default(self):
+        default = object()
         rc = ResConfig(schema={"a": int})
-        rc.update(a="123")
-        assert isinstance(rc.get("a"), int)
-        assert rc.get("a") == 123
+        assert "a" not in rc
+        rc.get("a", default) is default
 
     def test_with_schema_with_error(self):
         rc = ResConfig(schema={"a": int})
