@@ -73,15 +73,17 @@ class _Reloadable:
             r = r.setdefault(k, dicttype())
         r.setdefault(self.reloaderkey, []).append(func)
 
-    def _reload(self, reloaders, key, action, oldval, newval):
+    def _reload(self, reloaders, schema, key, action, oldval, newval):
         if key in reloaders and self.reloaderkey in reloaders[key]:
+            # TODO: Apply schema to both oldval and newval
+
             for func in reloaders[key][self.reloaderkey]:
                 func(action, oldval, newval)
 
     def reload(self):
         """Trigger all registered reloaders using the current config."""
         for key, val in self._conf.items():
-            self._reload(self._reloaders, key, Action.RELOADED, val, val)
+            self._reload(self._reloaders, self._schema, key, Action.RELOADED, val, val)
 
     def reloader(self, key: Key) -> Reloader:
         """Decorate a reloader function."""
@@ -177,7 +179,9 @@ class ResConfig(_Reloadable, _IO):
         else:
             return d
 
-    def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
+    def _update(
+        self, conf: dict, newconf: dict, reloaders: dict, schema: dict, reload=True
+    ):
         for key, newval in newconf.items():
             action = None
 
@@ -195,6 +199,7 @@ class ResConfig(_Reloadable, _IO):
                     conf[key],
                     newval,
                     reloaders[key] if key in reloaders else dicttype(),
+                    schema[key] if key in schema else dicttype(),
                     reload=reload,
                 )
 
@@ -223,7 +228,7 @@ class ResConfig(_Reloadable, _IO):
                         conf[key] = newval
 
             if reload and action is not None:
-                self._reload(reloaders, key, action, oldval, newval)
+                self._reload(reloaders, schema, key, action, oldval, newval)
 
     def update(self, *args, reload: bool = True, **kwargs):
         """Update config."""
@@ -233,5 +238,4 @@ class ResConfig(_Reloadable, _IO):
             newconf = kwargs
         else:
             raise ValueError("Invalid input args")
-        newconf = expand(newconf)
-        self._update(self._conf, newconf, self._reloaders, reload=reload)
+        self._update(self._conf, expand(newconf), self._reloaders, self._schema, reload)
