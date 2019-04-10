@@ -169,7 +169,14 @@ class ResConfig(_Reloadable, _IO):
                 else:
                     d = default
                     break
-        return s(d) if not isdict(s) else d
+
+        if not isdict(s):
+            try:
+                return s(d)
+            except Exception:
+                raise ValueError(f"{d!r} cannot be converted to {s}")
+        else:
+            return d
 
     def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
         for key, newval in newconf.items():

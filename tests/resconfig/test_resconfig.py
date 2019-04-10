@@ -153,6 +153,13 @@ class TestGet(TestCase):
         assert isinstance(rc.get("a"), int)
         assert rc.get("a") == 123
 
+    def test_with_schema_with_error(self):
+        rc = ResConfig(schema={"a": int})
+        rc.update(a="xyz")
+        with pytest.raises(ValueError) as exc:
+            rc.get("a")
+        assert "cannot be converted to" in str(exc)
+
 
 class TestUpdate(TestCase):
     @pytest.mark.parametrize("key, expected", [("a", True), ("z", False)])
