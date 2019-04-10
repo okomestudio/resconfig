@@ -122,13 +122,24 @@ class _IO:
 
 
 class ResConfig(_Reloadable, _IO):
-    """Resource Configuration."""
+    """Resource Configuration.
 
-    def __init__(self, default=None, reloaders=None):
+    Args:
+        default: Default configuration.
+        reloaders: Configuration reloaders.
+        schema: Configuration schema.
+
+    """
+
+    def __init__(
+        self, default: dict = None, reloaders: dict = None, schema: dict = None
+    ):
         self._reloaders = dicttype()
         if reloaders:
             for k, v in reloaders.items():
                 self.register(k, v)
+
+        self._schema = schema or dicttype()
 
         self._conf = dicttype()
         if default:
@@ -146,16 +157,19 @@ class ResConfig(_Reloadable, _IO):
 
     def get(self, key: Key, default=missing):
         """Get the config item at the key."""
+        s = self._schema
         d = self._conf
         for k in normkey(key):
             try:
+                s = s.get(k, {})
                 d = d[k]
             except KeyError:
                 if default is missing:
                     raise
                 else:
-                    return default
-        return d
+                    d = default
+                    break
+        return s(d) if not isdict(s) else d
 
     def _update(self, conf: dict, newconf: dict, reloaders: dict, reload=True):
         for key, newval in newconf.items():

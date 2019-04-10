@@ -147,6 +147,12 @@ class TestGet(TestCase):
         with pytest.raises(KeyError):
             rc.get("non")
 
+    def test_with_schema(self):
+        rc = ResConfig(schema={"a": int})
+        rc.update(a="123")
+        assert isinstance(rc.get("a"), int)
+        assert rc.get("a") == 123
+
 
 class TestUpdate(TestCase):
     @pytest.mark.parametrize("key, expected", [("a", True), ("z", False)])
