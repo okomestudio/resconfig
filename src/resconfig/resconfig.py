@@ -76,8 +76,9 @@ class _Reloadable:
 
     def _reload(self, reloaders, schema, key, action, oldval, newval):
         if key in reloaders and self.reloaderkey in reloaders[key]:
-            oldval = apply_schema(schema, oldval)
-            newval = apply_schema(schema, newval)
+            sche = schema.get(key, {})
+            oldval = apply_schema(sche, oldval)
+            newval = apply_schema(sche, newval)
             for func in reloaders[key][self.reloaderkey]:
                 func(action, oldval, newval)
 
