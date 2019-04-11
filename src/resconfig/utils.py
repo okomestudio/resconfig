@@ -63,3 +63,20 @@ def expand(d: dict) -> dict:
             dnew[key] = v
 
     return new
+
+
+def apply_schema(schema, config):
+    if isdict(config):
+        newconfig = {}
+        for key, value in config.items():
+            newconfig[key] = apply_schema(schema.get(key, {}), value)
+        return newconfig
+
+    if not isdict(schema):
+        try:
+            v = schema(config)
+        except Exception:
+            raise ValueError(f"{config!r} cannot be converted to {schema}")
+    else:
+        v = config
+    return v

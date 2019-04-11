@@ -10,6 +10,7 @@ from .typing import Any
 from .typing import Callable
 from .typing import Key
 from .typing import Optional
+from .utils import apply_schema
 from .utils import expand
 from .utils import isdict
 from .utils import merge
@@ -75,8 +76,8 @@ class _Reloadable:
 
     def _reload(self, reloaders, schema, key, action, oldval, newval):
         if key in reloaders and self.reloaderkey in reloaders[key]:
-            # TODO: Apply schema to both oldval and newval
-
+            oldval = apply_schema(schema, oldval)
+            newval = apply_schema(schema, newval)
             for func in reloaders[key][self.reloaderkey]:
                 func(action, oldval, newval)
 
@@ -170,14 +171,7 @@ class ResConfig(_Reloadable, _IO):
                     raise
                 else:
                     return default
-
-        if not isdict(s):
-            try:
-                return s(d)
-            except Exception:
-                raise ValueError(f"{d!r} cannot be converted to {s}")
-        else:
-            return d
+        return apply_schema(s, d)
 
     def _update(
         self, conf: dict, newconf: dict, reloaders: dict, schema: dict, reload=True
