@@ -1,5 +1,6 @@
 import pytest
 
+from resconfig.utils import apply_schema
 from resconfig.utils import expand
 from resconfig.utils import merge
 
@@ -40,3 +41,20 @@ class TestExpand:
         with pytest.raises(ValueError) as exc:
             expand(trial)
         assert "Cannot upcast" in str(exc)
+
+
+class TestApplySchema:
+    @pytest.mark.parametrize(
+        "value, schema, expected",
+        [
+            ("text", list, ["t", "e", "x", "t"]),
+            (
+                {"a": {"b": {"c": "123", "d": "text"}}},
+                {"a": {"b": {"c": int}}},
+                {"a": {"b": {"c": 123, "d": "text"}}},
+            ),
+        ],
+    )
+    def test(self, value, schema, expected):
+        result = apply_schema(schema, value)
+        assert result == expected
