@@ -22,7 +22,7 @@ from .utils import normkey
 log = getLogger(__name__)
 
 
-_missing = singleton("_missing")
+Missing = singleton("Missing")
 """Sentinel value for missing value."""
 
 REMOVE = singleton("REMOVE")
@@ -79,7 +79,7 @@ class _Reloadable:
     def _reload(self, reloaders, schema, key, action, oldval, newval):
         if key in reloaders and self.reloaderkey in reloaders[key]:
             sche = schema.get(key, {})
-            oldval = apply_schema(sche, oldval)
+            oldval = apply_schema(sche, oldval) if oldval is not Missing else oldval
             newval = apply_schema(sche, newval)
             for func in reloaders[key][self.reloaderkey]:
                 func(action, oldval, newval)
@@ -161,7 +161,7 @@ class ResConfig(_Reloadable, _IO):
             r = r[k]
         return True
 
-    def get(self, key: Key, default=_missing):
+    def get(self, key: Key, default=Missing):
         """Get the config item at the key."""
         s = self._schema
         d = self._conf
@@ -170,7 +170,7 @@ class ResConfig(_Reloadable, _IO):
                 s = s.get(k, {})
                 d = d[k]
             except KeyError:
-                if default is _missing:
+                if default is Missing:
                     raise
                 else:
                     return default
@@ -184,7 +184,7 @@ class ResConfig(_Reloadable, _IO):
 
             if isdict(newval):
                 key_in_old_conf = key in conf
-                oldval = deepcopy(conf[key]) if key_in_old_conf else None
+                oldval = deepcopy(conf[key]) if key_in_old_conf else Missing
 
                 if key not in conf:
                     conf[key] = dicttype()
@@ -219,7 +219,7 @@ class ResConfig(_Reloadable, _IO):
                         action = Action.MODIFIED
                         conf[key] = newval
                 else:
-                    oldval = None
+                    oldval = Missing
                     if newval is not REMOVE:
                         action = Action.ADDED
                         conf[key] = newval

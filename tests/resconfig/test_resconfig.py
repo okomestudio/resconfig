@@ -6,6 +6,7 @@ from unittest import mock
 import pytest
 
 from resconfig.resconfig import Action
+from resconfig.resconfig import Missing
 from resconfig.resconfig import REMOVE
 from resconfig.resconfig import ResConfig
 from resconfig.utils import expand
@@ -207,7 +208,7 @@ class TestReloaderTrigger(TestCase):
         rc.register("n", reloader)
         rc.update(n=trial)
         assert rc.get("n") == trial
-        reloader.assert_called_with(Action.ADDED, None, trial)
+        reloader.assert_called_with(Action.ADDED, Missing, trial)
 
     @pytest.mark.parametrize(
         "key, newval", [("a", 5), ("b.c", 5), ("b.c", {"d": 5}), ("b.c", {"d.e": 5})]
