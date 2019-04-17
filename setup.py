@@ -64,7 +64,7 @@ class Verify(Install):
             sys.exit(info)
 
 
-requires = ["PyYAML>=5.1"]
+requires = ["PyYAML>=5.1", "tspyo==0.1.0.dev0"]
 
 test_requires = [
     "black==18.9b0",
