@@ -9,7 +9,6 @@ from setuptools import setup
 from setuptools.command.install import install as Install
 from setuptools.command.test import test as TestCommand
 
-
 here = os.path.abspath(os.path.dirname(__file__))
 
 
@@ -64,14 +63,20 @@ class Verify(Install):
             sys.exit(info)
 
 
-requires = ["PyYAML>=5.1", "tspyo==0.1.0.dev0"]
+requires = ["PyYAML>=5.3.1", "tspyo==0.1.0.dev0"]
+
+setup_requires = []
+
+dev_requires = [
+    "black==19.10b0",
+    "isort==4.3.21",
+    "pre-commit==2.2.0",
+]
 
 test_requires = [
-    "black==18.9b0",
-    "coverage==4.5.2",
-    "pre-commit==1.14.4",
-    "pytest==4.2.1",
-    "pytest-cov==2.6.1",
+    "coverage==5.0.4",
+    "pytest==5.4.1",
+    "pytest-cov==2.8.1",
 ]
 
 
@@ -104,5 +109,6 @@ setup(
     cmdclass={"test": PyTest, "verify": Verify},
     install_requires=requires,
     tests_require=test_requires,
-    extras_require={"test": test_requires},
+    extras_require={"test": test_requires, "dev": dev_requires},
+    entry_points={"console_scripts": []},
 )
