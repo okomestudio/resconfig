@@ -82,6 +82,7 @@ jobs:
             python3 -m venv venv || virtualenv venv
             . venv/bin/activate
             pip install -e .[test]
+            pip install coveralls
       - save_cache:
           key: v1-dependencies-{{ checksum "setup.py" }}
           paths:
@@ -91,6 +92,7 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py test
+            coveralls
       - store_artifacts:
           path: test-reports
           destination: test-reports
