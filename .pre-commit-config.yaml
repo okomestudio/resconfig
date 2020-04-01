@@ -5,3 +5,9 @@ repos:
       - id: black
         # Specify generic python since a venv is assumed for development.
         language_version: python
+
+  - repo: https://github.com/timothycrosley/isort
+    rev: 4.3.21
+    hooks:
+      - id: isort
+        language_version: python
