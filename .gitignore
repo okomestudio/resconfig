@@ -104,7 +104,14 @@ venv.bak/
 # mypy
 .mypy_cache/
 
-# Misc.
+# Emacs ####
 
+# directory configuration
 .dir-locals.el
-.flake8
+
+# currently edited file
+\#*#
+
+# Miscellaneous ####
+.bash_local
+tmp
