@@ -63,21 +63,13 @@ class Verify(Install):
             sys.exit(info)
 
 
-requires = ["PyYAML>=5.3.1", "tspyo==0.1.0.dev0"]
+requires = ["PyYAML>=5.3.1"]
 
 setup_requires = []
 
-dev_requires = [
-    "black==19.10b0",
-    "isort==4.3.21",
-    "pre-commit==2.2.0",
-]
+dev_requires = ["black==19.10b0", "isort==4.3.21", "pre-commit==2.2.0"]
 
-test_requires = [
-    "coverage==5.0.4",
-    "pytest==5.4.1",
-    "pytest-cov==2.8.1",
-]
+test_requires = ["coverage==5.0.4", "pytest==5.4.1", "pytest-cov==2.8.1"]
 
 
 setup(

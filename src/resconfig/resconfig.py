@@ -4,8 +4,6 @@ from enum import Enum
 from functools import wraps
 from logging import getLogger
 
-from tspyo.singletons import singleton
-
 from . import json
 from . import yaml
 from .typing import Any
@@ -18,14 +16,13 @@ from .utils import isdict
 from .utils import merge
 from .utils import normkey
 
-
 log = getLogger(__name__)
 
 
-Missing = singleton("Missing")
+Missing = object()
 """Sentinel value for missing value."""
 
-REMOVE = singleton("REMOVE")
+REMOVE = object()
 """Sentinel value indicating the config field to be removed."""
 
 
