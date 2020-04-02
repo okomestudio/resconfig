@@ -192,7 +192,7 @@ class ResConfig(_Reloadable, _IO):
                     if not isdict(conf[key]):
                         conf[key] = dicttype()
 
-                self._update(
+                self._replace(
                     conf[key],
                     newval,
                     reloaders[key] if key in reloaders else dicttype(),
@@ -210,9 +210,7 @@ class ResConfig(_Reloadable, _IO):
             else:
                 if key_in_old_conf:
                     oldval = deepcopy(conf[key])
-                    if newval is REMOVE:
-                        action = Action.REMOVED
-                    elif oldval != newval:
+                    if oldval != newval:
                         action = Action.MODIFIED
                     del conf[key]
                 else:
