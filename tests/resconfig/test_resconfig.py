@@ -11,10 +11,6 @@ from resconfig.resconfig import ResConfig
 from resconfig.utils import expand
 
 
-def reloaderfunc(*args):
-    return args
-
-
 @pytest.fixture
 def default_config():
     yield {
@@ -51,10 +47,13 @@ class TestCase:
 
 
 class TestBasicAPI(TestCase):
-    def test_init_with_reloaders(self):
+    def test_init_with_watcher(self):
+        def watcher(*args):
+            return
+
         key = "a"
-        rc = ResConfig(reloaders={key: reloaderfunc})
-        assert reloaderfunc in rc._reloaders[key][rc.reloaderkey]
+        conf = ResConfig(watchers={key: watcher})
+        assert watcher in conf.watchers(key)
 
     @pytest.mark.parametrize(
         "key, expected",
@@ -78,13 +77,13 @@ class TestBasicAPI(TestCase):
         assert rc._conf == result
 
 
-class TestReloadable(TestCase):
+class TestWatchable(TestCase):
     def test_deregister_from_nonexisting_key(self):
         conf = ResConfig(self.default)
         with pytest.raises(KeyError):
             conf.deregister("missingkey")
 
-    def test_deregister_nonexisting_reloader(self):
+    def test_deregister_nonexisting_watcher(self):
         conf = ResConfig(self.default)
         conf.register("key", lambda *args: args)
         with pytest.raises(ValueError):
@@ -100,7 +99,7 @@ class TestReloadable(TestCase):
         with pytest.raises(KeyError):
             conf.deregister("key", f)
 
-    def test_deregister_last_reloader(self):
+    def test_deregister_last_watcher(self):
         def f(*args):
             return args
 
@@ -132,11 +131,11 @@ class TestReloadable(TestCase):
         called = mock.Mock()
         conf = ResConfig(self.default)
 
-        @conf.reloader("x1")
-        def reloader_func(*args, **kwargs):
+        @conf.watch("x1")
+        def watch_func(*args, **kwargs):
             called(*args, **kwargs)
 
-        assert reloader_func in conf._reloaders["x1"][conf.reloaderkey]
+        assert watch_func in conf.watchers("x1")
 
         conf.reload()
         called.assert_called_with(
@@ -276,16 +275,16 @@ class TestUpdate(TestCase):
             conf.update(3)
 
 
-class TestReloaderTrigger(TestCase):
+class TestWatcherTrigger(TestCase):
     @pytest.mark.parametrize("trial", [123, {"z": 3}])
     def test_added(self, trial):
         conf = ResConfig(self.default)
         assert "n" not in conf._conf
-        reloader = mock.Mock()
-        conf.register("n", reloader)
+        watcher = mock.Mock()
+        conf.register("n", watcher)
         conf.update(n=trial)
         assert conf.get("n") == trial
-        reloader.assert_called_with(Action.ADDED, Missing, trial)
+        watcher.assert_called_with(Action.ADDED, Missing, trial)
 
     @pytest.mark.parametrize(
         "key, newval",
@@ -295,8 +294,8 @@ class TestReloaderTrigger(TestCase):
         conf = ResConfig(self.default)
         assert key in conf
         oldval = conf.get(key)
-        reloader = mock.Mock()
-        conf.register(key, reloader)
+        watcher = mock.Mock()
+        conf.register(key, watcher)
         conf.update({key: newval})
         if isinstance(newval, MutableMapping):
             expanded = expand(newval) if isinstance(newval, MutableMapping) else newval
@@ -304,13 +303,13 @@ class TestReloaderTrigger(TestCase):
         else:
             expanded = newval
         assert conf.get(key) == expanded
-        reloader.assert_called_with(Action.MODIFIED, oldval, expanded)
+        watcher.assert_called_with(Action.MODIFIED, oldval, expanded)
 
     def test_removed(self):
         conf = ResConfig(self.default)
         assert "x3" in conf
-        reloader = mock.Mock()
-        conf.register("x3", reloader)
+        watcher = mock.Mock()
+        conf.register("x3", watcher)
         conf.update(x3=REMOVE)
         assert "x3" not in conf
-        reloader.assert_called_with(Action.REMOVED, self.default["x3"], REMOVE)
+        watcher.assert_called_with(Action.REMOVED, self.default["x3"], REMOVE)

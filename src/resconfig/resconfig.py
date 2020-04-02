@@ -9,6 +9,7 @@ from . import yaml
 from .typing import Any
 from .typing import Callable
 from .typing import Key
+from .typing import List
 from .typing import Optional
 from .utils import apply_schema
 from .utils import expand
@@ -35,59 +36,66 @@ class Action(Enum):
     RELOADED = 4
 
 
-Reloader = Callable[[Action, Any, Any], None]
+WatchFunction = Callable[[Action, Any, Any], None]
+"""Callback function, i.e., watcher, that triggers on an event happening at the key. It
+takes in Action value, old, and new values.
+"""
 
 
-class _Reloadable:
-    """Mix-in for adding the reloader functionality."""
+class _Watchable:
+    """Mix-in for adding the watch functionality."""
 
-    reloaderkey = "__reloader__"
+    __watcher_key = "__watchers__"
 
-    def deregister(self, key: Key, func: Optional[Reloader] = None):
-        """Deregister the reloader function for the key."""
-        r = self._reloaders
+    def deregister(self, key: Key, func: Optional[WatchFunction] = None):
+        """Deregister the watch function for the key."""
+        r = self._watchers
         try:
             for k in normkey(key):
                 r = r[k]
         except KeyError:
-            raise KeyError(f"Reloader not registered at {key}")
+            raise KeyError(f"Watch function not registered for {key}")
 
         if func is None:
-            if self.reloaderkey in r:
-                del r[self.reloaderkey]
+            if self.__watcher_key in r:
+                del r[self.__watcher_key]
         else:
             try:
-                r[self.reloaderkey].remove(func)
+                r[self.__watcher_key].remove(func)
             except KeyError:
-                raise KeyError(f"Reloaders not registered at {key}")
+                raise KeyError(f"Watch functions not registered for {key}")
             except ValueError:
-                raise ValueError(f"{func!r} not registered at {key}")
-            # If this was the last reloader, remove the node entirely.
-            if len(r[self.reloaderkey]) == 0:
-                del r[self.reloaderkey]
+                raise ValueError(f"{func!r} not registered for {key}")
+            # If this was the last watch function, remove the node.
+            if not r[self.__watcher_key]:
+                del r[self.__watcher_key]
 
-    def register(self, key: Key, func: Reloader):
-        """Register the reloader function for the key."""
-        r = self._reloaders
+    def register(self, key: Key, func: WatchFunction):
+        """Register the watch function for the key."""
+        r = self._watchers
         for k in normkey(key):
             r = r.setdefault(k, dicttype())
-        r.setdefault(self.reloaderkey, []).append(func)
+        r.setdefault(self.__watcher_key, []).append(func)
 
-    def _reload(self, reloaders, schema, key, action, oldval, newval):
-        if key in reloaders and self.reloaderkey in reloaders[key]:
+    def _reload(self, watchers, schema, key, action, oldval, newval):
+        if key in watchers and self.__watcher_key in watchers[key]:
             sche = schema.get(key, {})
             oldval = apply_schema(sche, oldval) if oldval is not Missing else oldval
             newval = apply_schema(sche, newval)
-            for func in reloaders[key][self.reloaderkey]:
+            for func in watchers[key][self.__watcher_key]:
                 func(action, oldval, newval)
 
     def reload(self):
-        """Trigger all registered reloaders using the current config."""
+        """Trigger all watch functions using the current config."""
         for key, val in self._conf.items():
-            self._reload(self._reloaders, self._schema, key, Action.RELOADED, val, val)
+            self._reload(self._watchers, self._schema, key, Action.RELOADED, val, val)
 
-    def reloader(self, key: Key) -> Reloader:
-        """Decorate a reloader function."""
+    def watchers(self, key: Key) -> List[WatchFunction]:
+        """Get all watch functions registered for the key."""
+        return self._watchers[key][self.__watcher_key]
+
+    def watch(self, key: Key) -> WatchFunction:
+        """Decorate a function to make it a watch function for the key."""
 
         def deco(f):
             @wraps(f)
@@ -123,22 +131,22 @@ class _IO:
             yaml.dump(self._conf, f)
 
 
-class ResConfig(_Reloadable, _IO):
+class ResConfig(_Watchable, _IO):
     """Resource Configuration.
 
     Args:
         default: Default configuration.
-        reloaders: Configuration reloaders.
+        watchers: Configuration watchers.
         schema: Configuration schema.
 
     """
 
     def __init__(
-        self, default: dict = None, reloaders: dict = None, schema: dict = None
+        self, default: dict = None, watchers: dict = None, schema: dict = None
     ):
-        self._reloaders = dicttype()
-        if reloaders:
-            for k, v in reloaders.items():
+        self._watchers = dicttype()
+        if watchers:
+            for k, v in watchers.items():
                 self.register(k, v)
 
         self._schema = expand(schema) if schema else dicttype()
@@ -177,7 +185,7 @@ class ResConfig(_Reloadable, _IO):
         return apply_schema(s, d)
 
     def _replace(
-        self, conf: dict, newconf: dict, reloaders: dict, schema: dict, reload=True
+        self, conf: dict, newconf: dict, watchers: dict, schema: dict, reload=True
     ):
         for key, newval in newconf.items():
             action = None
@@ -195,7 +203,7 @@ class ResConfig(_Reloadable, _IO):
                 self._replace(
                     conf[key],
                     newval,
-                    reloaders[key] if key in reloaders else dicttype(),
+                    watchers[key] if key in watchers else dicttype(),
                     schema[key] if key in schema else dicttype(),
                     reload=reload,
                 )
@@ -219,14 +227,14 @@ class ResConfig(_Reloadable, _IO):
                         action = Action.ADDED
 
             if reload and action is not None:
-                self._reload(reloaders, schema, key, action, oldval, newval)
+                self._reload(watchers, schema, key, action, oldval, newval)
 
         for key in tuple(conf.keys()):
             oldval = conf[key]
             if reload and action is not None:
                 action = Action.REMOVED
                 newval = REMOVE
-                self._reload(reloaders, schema, key, action, oldval, newval)
+                self._reload(watchers, schema, key, action, oldval, newval)
             del conf[key]
 
     def replace(self, *args, reload: bool = True, **kwargs):
@@ -238,11 +246,11 @@ class ResConfig(_Reloadable, _IO):
         else:
             raise TypeError("Invalid input args")
         newconf = expand(newconf)
-        self._replace(self._conf, newconf, self._reloaders, self._schema, reload)
+        self._replace(self._conf, newconf, self._watchers, self._schema, reload)
         self._conf = newconf
 
     def _update(
-        self, conf: dict, newconf: dict, reloaders: dict, schema: dict, reload=True
+        self, conf: dict, newconf: dict, watchers: dict, schema: dict, reload=True
     ):
         for key, newval in newconf.items():
             action = None
@@ -260,7 +268,7 @@ class ResConfig(_Reloadable, _IO):
                 self._update(
                     conf[key],
                     newval,
-                    reloaders[key] if key in reloaders else dicttype(),
+                    watchers[key] if key in watchers else dicttype(),
                     schema[key] if key in schema else dicttype(),
                     reload=reload,
                 )
@@ -290,7 +298,7 @@ class ResConfig(_Reloadable, _IO):
                         conf[key] = newval
 
             if reload and action is not None:
-                self._reload(reloaders, schema, key, action, oldval, newval)
+                self._reload(watchers, schema, key, action, oldval, newval)
 
     def update(self, *args, reload: bool = True, **kwargs):
         """Update config."""
@@ -300,4 +308,4 @@ class ResConfig(_Reloadable, _IO):
             newconf = kwargs
         else:
             raise ValueError("Invalid input args")
-        self._update(self._conf, expand(newconf), self._reloaders, self._schema, reload)
+        self._update(self._conf, expand(newconf), self._watchers, self._schema, reload)
