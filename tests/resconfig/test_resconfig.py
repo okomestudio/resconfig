@@ -4,10 +4,9 @@ from tempfile import NamedTemporaryFile
 from unittest import mock
 
 import pytest
-
+from resconfig.resconfig import REMOVE
 from resconfig.resconfig import Action
 from resconfig.resconfig import Missing
-from resconfig.resconfig import REMOVE
 from resconfig.resconfig import ResConfig
 from resconfig.utils import expand
 
@@ -53,6 +52,11 @@ class TestBasicAPI(TestCase):
     )
     def test_contains(self, rc, key, expected):
         assert (key in rc) is expected
+
+    def test_asdict(self, rc):
+        result = rc.asdict()
+        assert isinstance(result, dict)
+        assert rc._conf == result
 
 
 class TestReloadable(TestCase):
@@ -170,6 +174,26 @@ class TestGet(TestCase):
         with pytest.raises(ValueError) as exc:
             rc.get("a")
         assert "cannot be converted to" in str(exc)
+
+
+class TestReplace(TestCase):
+    newconf = {"a": {"foo": "bar"}, "x": {"i": 2, "j": {"k": "foo"}}, "y": "bar"}
+
+    def test_args(self, rc):
+        a = ResConfig()
+        a.replace(self.newconf)
+        b = ResConfig()
+        b.replace(**self.newconf)
+        assert a.asdict() == b.asdict()
+
+    def test_invalid_args(self, rc):
+        with pytest.raises(TypeError):
+            rc.replace("badarg")
+
+    def test(self, rc):
+        assert rc.asdict() != self.newconf
+        rc.replace(self.newconf)
+        assert rc.asdict() == self.newconf
 
 
 class TestUpdate(TestCase):

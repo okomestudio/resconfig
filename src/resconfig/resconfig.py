@@ -102,7 +102,6 @@ class _Reloadable:
 
 class _IO:
     def read_from_dict(self, dic):
-        self._conf = dicttype()
         self.update(dic)
 
     def read_from_json(self, filename):
@@ -158,6 +157,10 @@ class ResConfig(_Reloadable, _IO):
             r = r[k]
         return True
 
+    def asdict(self) -> dict:
+        """Returns the configuration as a dict object."""
+        return self._conf
+
     def get(self, key: Key, default=Missing):
         """Get the config item at the key."""
         s = self._schema
@@ -172,6 +175,73 @@ class ResConfig(_Reloadable, _IO):
                 else:
                     return default
         return apply_schema(s, d)
+
+    def _replace(
+        self, conf: dict, newconf: dict, reloaders: dict, schema: dict, reload=True
+    ):
+        for key, newval in newconf.items():
+            action = None
+            key_in_old_conf = key in conf
+
+            if isdict(newval):
+                oldval = deepcopy(conf[key]) if key_in_old_conf else Missing
+
+                if not key_in_old_conf:
+                    conf[key] = dicttype()
+                else:
+                    if not isdict(conf[key]):
+                        conf[key] = dicttype()
+
+                self._update(
+                    conf[key],
+                    newval,
+                    reloaders[key] if key in reloaders else dicttype(),
+                    schema[key] if key in schema else dicttype(),
+                    reload=reload,
+                )
+
+                if key_in_old_conf:
+                    if oldval != newval:
+                        action = Action.MODIFIED
+                    del conf[key]
+                else:
+                    action = Action.ADDED
+
+            else:
+                if key_in_old_conf:
+                    oldval = deepcopy(conf[key])
+                    if newval is REMOVE:
+                        action = Action.REMOVED
+                    elif oldval != newval:
+                        action = Action.MODIFIED
+                    del conf[key]
+                else:
+                    oldval = Missing
+                    if newval is not REMOVE:
+                        action = Action.ADDED
+
+            if reload and action is not None:
+                self._reload(reloaders, schema, key, action, oldval, newval)
+
+        for key in tuple(conf.keys()):
+            oldval = conf[key]
+            if reload and action is not None:
+                action = Action.REMOVED
+                newval = REMOVE
+                self._reload(reloaders, schema, key, action, oldval, newval)
+            del conf[key]
+
+    def replace(self, *args, reload: bool = True, **kwargs):
+        """Replace config."""
+        if args and isdict(args[0]):
+            newconf = args[0]
+        elif kwargs:
+            newconf = kwargs
+        else:
+            raise TypeError("Invalid input args")
+        newconf = expand(newconf)
+        self._replace(self._conf, newconf, self._reloaders, self._schema, reload)
+        self._conf = newconf
 
     def _update(
         self, conf: dict, newconf: dict, reloaders: dict, schema: dict, reload=True
