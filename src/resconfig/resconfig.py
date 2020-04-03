@@ -3,9 +3,8 @@ from enum import Enum
 from functools import wraps
 from logging import getLogger
 
-from . import json
-from . import yaml
 from .dicttype import Dict
+from .io import IO
 from .schema import Schema
 from .typing import Any
 from .typing import Callable
@@ -105,30 +104,7 @@ class _Watchable:
         return deco
 
 
-class _IO:
-    def read_from_dict(self, dic):
-        self.update(dic)
-
-    def read_from_json(self, filename):
-        with open(filename) as f:
-            loaded = json.load(f)
-        self.read_from_dict(loaded)
-
-    def read_from_yaml(self, filename):
-        with open(filename) as f:
-            loaded = yaml.load(f)
-        self.read_from_dict(loaded)
-
-    def save_to_json(self, filename):
-        with open(filename, "w") as f:
-            json.dump(self._conf, f)
-
-    def save_to_yaml(self, filename):
-        with open(filename, "w") as f:
-            yaml.dump(self._conf, f)
-
-
-class ResConfig(_Watchable, _IO):
+class ResConfig(_Watchable, IO):
     """Resource Configuration.
 
     Args:

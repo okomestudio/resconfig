@@ -1,6 +1,4 @@
-import os
 from collections.abc import MutableMapping
-from tempfile import NamedTemporaryFile
 from unittest import mock
 
 import pytest
@@ -9,34 +7,6 @@ from resconfig.resconfig import Action
 from resconfig.resconfig import Missing
 from resconfig.resconfig import ResConfig
 from resconfig.utils import expand
-
-
-@pytest.fixture
-def default_config():
-    yield {
-        "x1": 1,
-        "x2": "text_x2",
-        "x3": {
-            "y1": 2,
-            "y2": "text_x3.y2",
-            "y3": {"z1": 3, "z2": "text_x3.y3.z2"},
-            "y4": {"z1": 4, "z2": "text_x3.y4.z2"},
-        },
-        "x4": {
-            "y1": 5,
-            "y2": "text_x4.y2",
-            "y3": {"z1": 6, "z2": "text_x4.y3.z2"},
-            "y4": {"z1": 7, "z2": "text_x4.y4.z2"},
-        },
-    }
-
-
-@pytest.fixture
-def filename():
-    f = NamedTemporaryFile(delete=False)
-    filename = f.name
-    yield filename
-    os.remove(filename)
 
 
 class TestCase:
@@ -141,37 +111,6 @@ class TestWatchable(TestCase):
         called.assert_called_with(
             Action.RELOADED, self.default["x1"], self.default["x1"]
         )
-
-
-class TestIO(TestCase):
-    def test_from_dict(self):
-        conf = ResConfig(self.default)
-        conf.read_from_dict(self.default)
-        assert conf._conf == expand(self.default)
-
-    def test_from_json(self, filename):
-        conf = ResConfig(self.default)
-        conf.save_to_json(filename)
-        with open(filename) as f:
-            content = f.read()
-        assert '{"x1": 1' in content
-
-        conf = ResConfig()
-        conf.read_from_json(filename)
-        assert "x3.y1" in conf
-        assert conf.get("x3.y1") == self.default["x3"]["y1"]
-
-    def test_from_yaml(self, filename):
-        conf = ResConfig(self.default)
-        conf.save_to_yaml(filename)
-        with open(filename) as f:
-            content = f.read()
-        assert "x1: 1" in content
-
-        conf = ResConfig()
-        conf.read_from_yaml(filename)
-        assert "x3.y1" in conf
-        assert conf.get("x3.y1") == self.default["x3"]["y1"]
 
 
 class TestGet(TestCase):
