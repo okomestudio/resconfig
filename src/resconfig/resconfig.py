@@ -1,4 +1,3 @@
-from collections import OrderedDict as dicttype
 from copy import deepcopy
 from enum import Enum
 from functools import wraps
@@ -6,12 +5,13 @@ from logging import getLogger
 
 from . import json
 from . import yaml
+from .dicttype import Dict
+from .schema import Schema
 from .typing import Any
 from .typing import Callable
 from .typing import Key
 from .typing import List
 from .typing import Optional
-from .utils import apply_schema
 from .utils import expand
 from .utils import isdict
 from .utils import merge
@@ -74,21 +74,18 @@ class _Watchable:
         """Register the watch function for the key."""
         r = self._watchers
         for k in normkey(key):
-            r = r.setdefault(k, dicttype())
+            r = r.setdefault(k, Dict())
         r.setdefault(self.__watcher_key, []).append(func)
 
-    def _reload(self, watchers, schema, key, action, oldval, newval):
+    def _reload(self, watchers, key, action, oldval, newval):
         if key in watchers and self.__watcher_key in watchers[key]:
-            sche = schema.get(key, {})
-            oldval = apply_schema(sche, oldval) if oldval is not Missing else oldval
-            newval = apply_schema(sche, newval)
             for func in watchers[key][self.__watcher_key]:
                 func(action, oldval, newval)
 
     def reload(self):
         """Trigger all watch functions using the current config."""
         for key, val in self._conf.items():
-            self._reload(self._watchers, self._schema, key, Action.RELOADED, val, val)
+            self._reload(self._watchers, key, Action.RELOADED, val, val)
 
     def watchers(self, key: Key) -> List[WatchFunction]:
         """Get all watch functions registered for the key."""
@@ -144,50 +141,49 @@ class ResConfig(_Watchable, _IO):
     def __init__(
         self, default: dict = None, watchers: dict = None, schema: dict = None
     ):
-        self._watchers = dicttype()
+        self._watchers = Dict()
         if watchers:
+            watchers = expand(watchers)
             for k, v in watchers.items():
                 self.register(k, v)
 
-        self._schema = expand(schema) if schema else dicttype()
+        self._schema = Schema(expand(schema) if schema else Dict())
 
-        self._conf = dicttype()
+        self._conf = Dict()
         if default:
             self.update(default)
 
     def __contains__(self, key):
-        r = self._conf
+        ref = self._conf
         for k in normkey(key):
-            if not isdict(r):
+            if not isdict(ref):
                 return False
-            if k not in r:
+            if k not in ref:
                 return False
-            r = r[k]
+            ref = ref[k]
         return True
 
     def asdict(self) -> dict:
-        """Returns the configuration as a dict object."""
-        return self._conf
+        """Return the configuration as a dict object."""
+        return deepcopy(self._conf)
 
     def get(self, key: Key, default=Missing):
         """Get the config item at the key."""
-        s = self._schema
-        d = self._conf
+        ref = self._conf
         for k in normkey(key):
             try:
-                s = s.get(k, {})
-                d = d[k]
+                ref = ref[k]
             except KeyError:
                 if default is Missing:
                     raise
                 else:
                     return default
-        return apply_schema(s, d)
+        return deepcopy(ref)
 
-    def _replace(
-        self, conf: dict, newconf: dict, watchers: dict, schema: dict, reload=True
-    ):
-        for key, newval in newconf.items():
+    def __replace(self, conf: dict, newconf: dict, watchers: dict, schema: dict):
+        keys = list(newconf.keys())
+        for key in keys:
+            newval = newconf[key]
             action = None
             key_in_old_conf = key in conf
 
@@ -195,17 +191,16 @@ class ResConfig(_Watchable, _IO):
                 oldval = deepcopy(conf[key]) if key_in_old_conf else Missing
 
                 if not key_in_old_conf:
-                    conf[key] = dicttype()
+                    conf[key] = Dict()
                 else:
                     if not isdict(conf[key]):
-                        conf[key] = dicttype()
+                        conf[key] = Dict()
 
-                self._replace(
+                self.__replace(
                     conf[key],
                     newval,
-                    watchers[key] if key in watchers else dicttype(),
-                    schema[key] if key in schema else dicttype(),
-                    reload=reload,
+                    watchers[key] if key in watchers else Dict(),
+                    schema.get(key),
                 )
 
                 if key_in_old_conf:
@@ -220,24 +215,26 @@ class ResConfig(_Watchable, _IO):
                     oldval = deepcopy(conf[key])
                     if oldval != newval:
                         action = Action.MODIFIED
+                        newconf[key] = schema.apply(key, newval)
                     del conf[key]
                 else:
                     oldval = Missing
                     if newval is not REMOVE:
                         action = Action.ADDED
+                        newconf[key] = schema.apply(key, newval)
 
-            if reload and action is not None:
-                self._reload(watchers, schema, key, action, oldval, newval)
+            if action is not None:
+                self._reload(watchers, key, action, oldval, newval)
 
         for key in tuple(conf.keys()):
             oldval = conf[key]
-            if reload and action is not None:
+            if action is not None:
                 action = Action.REMOVED
                 newval = REMOVE
-                self._reload(watchers, schema, key, action, oldval, newval)
+                self._reload(watchers, key, action, oldval, newval)
             del conf[key]
 
-    def replace(self, *args, reload: bool = True, **kwargs):
+    def replace(self, *args, **kwargs):
         """Replace config."""
         if args and isdict(args[0]):
             newconf = args[0]
@@ -246,12 +243,10 @@ class ResConfig(_Watchable, _IO):
         else:
             raise TypeError("Invalid input args")
         newconf = expand(newconf)
-        self._replace(self._conf, newconf, self._watchers, self._schema, reload)
+        self.__replace(self._conf, newconf, self._watchers, self._schema)
         self._conf = newconf
 
-    def _update(
-        self, conf: dict, newconf: dict, watchers: dict, schema: dict, reload=True
-    ):
+    def __update(self, conf: dict, newconf: dict, watchers: dict, schema: dict):
         for key, newval in newconf.items():
             action = None
 
@@ -260,17 +255,16 @@ class ResConfig(_Watchable, _IO):
                 oldval = deepcopy(conf[key]) if key_in_old_conf else Missing
 
                 if key not in conf:
-                    conf[key] = dicttype()
+                    conf[key] = Dict()
                 else:
                     if not isdict(conf[key]):
-                        conf[key] = dicttype()
+                        conf[key] = Dict()
 
-                self._update(
+                self.__update(
                     conf[key],
                     newval,
-                    watchers[key] if key in watchers else dicttype(),
-                    schema[key] if key in schema else dicttype(),
-                    reload=reload,
+                    watchers[key] if key in watchers else Dict(),
+                    schema.get(key),
                 )
 
                 if key_in_old_conf:
@@ -290,22 +284,22 @@ class ResConfig(_Watchable, _IO):
                         del conf[key]
                     elif oldval != newval:
                         action = Action.MODIFIED
-                        conf[key] = newval
+                        conf[key] = schema.apply(key, newval)
                 else:
                     oldval = Missing
                     if newval is not REMOVE:
                         action = Action.ADDED
-                        conf[key] = newval
+                        conf[key] = schema.apply(key, newval)
 
-            if reload and action is not None:
-                self._reload(watchers, schema, key, action, oldval, newval)
+            if action is not None:
+                self._reload(watchers, key, action, oldval, newval)
 
-    def update(self, *args, reload: bool = True, **kwargs):
+    def update(self, *args, **kwargs):
         """Update config."""
         if args and isdict(args[0]):
             newconf = args[0]
         elif kwargs:
             newconf = kwargs
         else:
-            raise ValueError("Invalid input args")
-        self._update(self._conf, expand(newconf), self._watchers, self._schema, reload)
+            raise TypeError("Invalid input args")
+        self.__update(self._conf, expand(newconf), self._watchers, self._schema)

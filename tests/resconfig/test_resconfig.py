@@ -206,9 +206,8 @@ class TestGet(TestCase):
 
     def test_with_schema_with_error(self):
         conf = ResConfig(schema={"a": int})
-        conf.update(a="xyz")
-        with pytest.raises(ValueError) as exc:
-            conf.get("a")
+        with pytest.raises(TypeError) as exc:
+            conf.update(a="xyz")
         assert "cannot be converted to" in str(exc)
 
 
@@ -271,7 +270,7 @@ class TestUpdate(TestCase):
 
     def test_invalid_args(self):
         conf = ResConfig(self.default)
-        with pytest.raises(ValueError):
+        with pytest.raises(TypeError):
             conf.update(3)
 
 
@@ -293,13 +292,13 @@ class TestWatcherTrigger(TestCase):
     def test_modified(self, key, newval):
         conf = ResConfig(self.default)
         assert key in conf
-        oldval = conf.get(key)
         watcher = mock.Mock()
         conf.register(key, watcher)
+
+        oldval = conf.get(key)
         conf.update({key: newval})
         if isinstance(newval, MutableMapping):
-            expanded = expand(newval) if isinstance(newval, MutableMapping) else newval
-            expanded = {**oldval, **expanded}
+            expanded = {**oldval, **expand(newval)}
         else:
             expanded = newval
         assert conf.get(key) == expanded

@@ -1,5 +1,6 @@
 from collections.abc import MutableMapping
 
+from .dicttype import Dict
 from .typing import Any
 from .typing import Generator
 from .typing import Key
@@ -38,7 +39,7 @@ def merge(d1: dict, d2: dict) -> dict:
 
 
 def expand(d: dict) -> dict:
-    new = {}
+    new = Dict()
     for k, v in d.items():
         dnew = new
 
@@ -47,7 +48,7 @@ def expand(d: dict) -> dict:
             key = keys[0]
         else:
             for key in keys[:-1]:
-                dnew = dnew.setdefault(key, {})
+                dnew = dnew.setdefault(key, Dict())
                 if not isdict(dnew):
                     raise ValueError("Cannot upcast a non-dict node to a dict node")
             key = keys[-1]
@@ -63,20 +64,3 @@ def expand(d: dict) -> dict:
             dnew[key] = v
 
     return new
-
-
-def apply_schema(schema, config):
-    if isdict(config):
-        newconfig = {}
-        for key, value in config.items():
-            newconfig[key] = apply_schema(schema.get(key, {}), value)
-        return newconfig
-
-    if not isdict(schema):
-        try:
-            v = schema(config)
-        except Exception:
-            raise ValueError(f"{config!r} cannot be converted to {schema}")
-    else:
-        v = config
-    return v
