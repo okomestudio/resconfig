@@ -13,12 +13,18 @@ def _suffix_to_filetype(filename):
 
 
 class IO:
-    def __load(self, filename, filetype=None):
+    def _load_as_dict(self, filename, filetype=None):
+        if filetype is None:
+            filetype = _suffix_to_filetype(filename)
         load = {"ini": ini.load, "json": json.load, "yaml": yaml.load}.get(
             filetype, ini.load
         )
         with open(filename) as f:
             loaded = load(f)
+        return loaded
+
+    def __load(self, filename, filetype=None):
+        loaded = self._load_as_dict(filename, filetype)
         self.replace(loaded)
 
     def load(self, filename):

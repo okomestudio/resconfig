@@ -17,6 +17,13 @@ class TestCase:
 
 
 class TestBasicAPI(TestCase):
+    def test_init_with_files(self, filename):
+        expected = {"a": {"b": "1"}}
+        conf = ResConfig(expected)
+        conf.save(filename)
+        conf = ResConfig(paths=["somenonexistingfile", filename])
+        assert conf.asdict() == expected
+
     def test_init_with_watcher(self):
         def watcher(*args):
             return

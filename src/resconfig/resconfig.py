@@ -2,6 +2,7 @@ from copy import deepcopy
 from enum import Enum
 from functools import wraps
 from logging import getLogger
+from pathlib import Path
 
 from .dicttype import Dict
 from .io import IO
@@ -11,6 +12,7 @@ from .typing import Callable
 from .typing import Key
 from .typing import List
 from .typing import Optional
+from .typing import Text
 from .utils import expand
 from .utils import isdict
 from .utils import merge
@@ -115,7 +117,11 @@ class ResConfig(_Watchable, IO):
     """
 
     def __init__(
-        self, default: dict = None, watchers: dict = None, schema: dict = None
+        self,
+        default: dict = None,
+        paths: List[Text] = None,
+        watchers: dict = None,
+        schema: dict = None,
     ):
         self._watchers = Dict()
         if watchers:
@@ -126,6 +132,14 @@ class ResConfig(_Watchable, IO):
         self._schema = Schema(expand(schema) if schema else Dict())
 
         self._conf = Dict()
+        default = expand(default) if default else Dict()
+        if paths:
+            for path in paths:
+                path = Path(path)
+                if path.is_file():
+                    content = self._load_as_dict(path)
+                    default = merge(default, content)
+                    break
         if default:
             self.update(default)
 

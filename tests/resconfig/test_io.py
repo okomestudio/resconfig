@@ -35,6 +35,14 @@ class TestIO(TestCase):
         finally:
             os.remove(filename)
 
+    def test_load_as_dict(self, filename):
+        expected = {"a": {"b": "1"}}
+        conf = ResConfig(expected)
+        conf.save(filename)
+        content = conf._load_as_dict(filename)
+        assert isinstance(content, dict)
+        assert content == expected
+
     def test_with_suffix(self, filename):
         conf = ResConfig()
         with mock.patch("resconfig.io._suffix_to_filetype") as func:
