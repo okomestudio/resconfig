@@ -14,6 +14,7 @@ from .typing import List
 from .typing import Optional
 from .typing import Text
 from .utils import expand
+from .utils import flexdictargs
 from .utils import isdict
 from .utils import merge
 from .utils import normkey
@@ -225,17 +226,11 @@ class ResConfig(_Watchable, IO):
                 self._reload(watchers, key, action, oldval, newval)
             del conf[key]
 
-    def replace(self, *args, **kwargs):
+    @flexdictargs
+    def replace(self, conf):
         """Replace config."""
-        if args and isdict(args[0]):
-            newconf = args[0]
-        elif kwargs:
-            newconf = kwargs
-        else:
-            raise TypeError("Invalid input args")
-        newconf = expand(newconf)
-        self.__replace(self._conf, newconf, self._watchers, self._schema)
-        self._conf = newconf
+        self.__replace(self._conf, conf, self._watchers, self._schema)
+        self._conf = conf
 
     def __update(self, conf: dict, newconf: dict, watchers: dict, schema: dict):
         for key, newval in newconf.items():
@@ -285,12 +280,6 @@ class ResConfig(_Watchable, IO):
             if action is not None:
                 self._reload(watchers, key, action, oldval, newval)
 
-    def update(self, *args, **kwargs):
-        """Update config."""
-        if args and isdict(args[0]):
-            newconf = args[0]
-        elif kwargs:
-            newconf = kwargs
-        else:
-            raise TypeError("Invalid input args")
-        self.__update(self._conf, expand(newconf), self._watchers, self._schema)
+    @flexdictargs
+    def update(self, conf):
+        self.__update(self._conf, conf, self._watchers, self._schema)

@@ -1,4 +1,5 @@
 from collections.abc import MutableMapping
+from functools import wraps
 
 from .dicttype import Dict
 from .typing import Any
@@ -64,3 +65,18 @@ def expand(d: dict) -> dict:
             dnew[key] = v
 
     return new
+
+
+def flexdictargs(func):
+    @wraps(func)
+    def f(self, *args, **kwargs):
+        if args and isdict(args[0]):
+            dic = args[0]
+        elif kwargs:
+            dic = kwargs
+        else:
+            raise TypeError("Invalid input arguments")
+        dic = expand(dic)
+        return func(self, dic)
+
+    return f
