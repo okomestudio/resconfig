@@ -157,6 +157,7 @@ class ResConfig(_Watchable, IO):
         return deepcopy(ref)
 
     def __replace(self, conf: dict, newconf: dict, watchers: dict, schema: dict):
+        action = None
         keys = list(newconf.keys())
         for key in keys:
             newval = newconf[key]
