@@ -1,5 +1,6 @@
-import yaml
 from collections import OrderedDict
+
+import yaml
 
 
 class _OrderedDumper(yaml.Dumper):
