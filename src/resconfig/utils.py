@@ -1,4 +1,5 @@
 from collections.abc import MutableMapping
+from copy import deepcopy
 from functools import wraps
 
 from .dicttype import Dict
@@ -24,19 +25,23 @@ def normkey(key: Key) -> Generator[str, None, None]:
             yield key
 
 
+def _merge(d1, d2):
+    for k, v in d1.items():
+        if k in d2:
+            if isdict(v) and isdict(d2[k]):
+                d2[k] = _merge(v, d2[k])
+    d3 = d1.copy()
+    d3.update(d2)
+    return d3
+
+
 def merge(d1: dict, d2: dict) -> dict:
     """Update two dicts recursively.
 
     If either mapping has leaves that are non-dicts, the second's leaf overwrites the
     first's.
     """
-    for k, v in d1.items():
-        if k in d2:
-            if all(isdict(e) for e in (v, d2[k])):
-                d2[k] = merge(v, d2[k])
-    d3 = d1.copy()
-    d3.update(d2)
-    return d3
+    return _merge(deepcopy(d1), deepcopy(d2))
 
 
 def expand(d: dict) -> dict:
