@@ -6,6 +6,9 @@ from resconfig.resconfig import Action
 from resconfig.resconfig import ResConfig
 from resconfig.resconfig import Sentinel
 from resconfig.utils import expand
+from resconfig.utils import isdict
+from resconfig.utils import merge
+from resconfig.utils import normkeyget
 
 
 class TestCase:
@@ -219,16 +222,25 @@ class TestUpdate(TestCase):
             conf.update(3)
 
 
-class TestWatcherTrigger(TestCase):
-    @pytest.mark.parametrize("trial", [123, {"z": 3}])
-    def test_added(self, trial):
+class TestWatchersOnUpdate(TestCase):
+    @pytest.mark.parametrize(
+        "key, newval",
+        [
+            ("n", 123),
+            ("n", {"z": 3}),
+            ("x1.y1", 4),
+            ("x1.y1.z1", 4),
+            ("x1.y1.z1", {"foo": "bar"}),
+        ],
+    )
+    def test_added(self, key, newval):
         conf = ResConfig(self.default)
-        assert "n" not in conf._conf
+        assert key not in conf
         watcher = mock.Mock()
-        conf.register("n", watcher)
-        conf.update(n=trial)
-        assert conf.get("n") == trial
-        watcher.assert_called_with(Action.ADDED, Sentinel.Missing, trial)
+        conf.register(key, watcher)
+        conf.update({key: newval})
+        assert conf.get(key) == newval
+        watcher.assert_called_with(Action.ADDED, Sentinel.Missing, newval)
 
     @pytest.mark.parametrize(
         "key, newval",
@@ -239,21 +251,36 @@ class TestWatcherTrigger(TestCase):
         assert key in conf
         watcher = mock.Mock()
         conf.register(key, watcher)
-
         oldval = conf.get(key)
         conf.update({key: newval})
-        if isinstance(newval, MutableMapping):
-            expanded = {**oldval, **expand(newval)}
+        if isdict(newval):
+            expanded = merge(oldval, expand(newval))
         else:
             expanded = newval
         assert conf.get(key) == expanded
         watcher.assert_called_with(Action.MODIFIED, oldval, expanded)
 
-    def test_removed(self):
+    @pytest.mark.parametrize(
+        "key, removed, remain",
+        [
+            ("x1", ["x1"], ["x2"]),
+            ("x2", ["x2"], ["x1"]),
+            ("x3", ["x3", "x3.y1", "x3.y2.z2"], ["x4"]),
+            ("x3.y1", ["x3.y1"], ["x3.y2"]),
+            ("x3.y4", ["x3.y4", "x3.y4.z1"], ["x3.y3"]),
+            ("x3.y4.z2", ["x3.y4.z2"], ["x3.y4", "x3.y4.z1"]),
+        ],
+    )
+    def test_removed_with_sentinel(self, key, removed, remain):
         conf = ResConfig(self.default)
-        assert "x3" in conf
+        assert key in conf
         watcher = mock.Mock()
-        conf.register("x3", watcher)
-        conf.update(x3=Sentinel.REMOVE)
-        assert "x3" not in conf
-        watcher.assert_called_with(Action.REMOVED, self.default["x3"], Sentinel.REMOVE)
+        conf.register(key, watcher)
+        conf.update({key: Sentinel.REMOVE})
+        for k in removed:
+            assert k not in conf
+        for k in remain:
+            assert k in conf
+        watcher.assert_called_with(
+            Action.REMOVED, normkeyget(self.default, key), Sentinel.REMOVE
+        )
