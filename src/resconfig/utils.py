@@ -25,6 +25,16 @@ def normkey(key: Key) -> Generator[str, None, None]:
             yield key
 
 
+def normkeyget(dic: dict, key: Key, default: Any = None) -> Any:
+    ref = dic
+    for k in normkey(key):
+        try:
+            ref = ref[k]
+        except KeyError:
+            return default
+    return ref
+
+
 def _merge(d1, d2):
     for k, v in d1.items():
         if k in d2:
