@@ -206,6 +206,9 @@ class ResConfig(_Watchable, IO):
         conf.setdefault(key, Dict())
 
         for subkey in newconf[key].keys():
+            if not isdict(conf[key]):
+                conf[key] = Dict()
+
             action, oldval, newval = self.__update(
                 subkey,
                 conf[key],
@@ -225,8 +228,6 @@ class ResConfig(_Watchable, IO):
                 else:
                     newval_at_dict_node[subkey] = newval
 
-                if not isdict(conf[key]):
-                    conf[key] = Dict()
                 conf[key][subkey] = newval
 
             elif action in (Action.REMOVED,):
