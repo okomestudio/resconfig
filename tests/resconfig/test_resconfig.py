@@ -284,3 +284,15 @@ class TestWatchersOnUpdate(TestCase):
         watcher.assert_called_with(
             Action.REMOVED, normkeyget(self.default, key), Sentinel.REMOVE
         )
+
+    def test_removed(self, default_config_key, all_default_config_keys):
+        key = default_config_key
+        conf = ResConfig(self.default)
+        assert key in conf
+        oldval = normkeyget(self.default, key)
+        watcher = mock.Mock()
+        conf.register(key, watcher)
+        conf.update({key: Sentinel.REMOVE})
+        # TODO: Test non-existence of removed keys
+        # TODO: Test existence of remaining keys
+        watcher.assert_called_with(Action.REMOVED, oldval, Sentinel.REMOVE)
