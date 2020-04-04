@@ -2,10 +2,9 @@ from collections.abc import MutableMapping
 from unittest import mock
 
 import pytest
-from resconfig.resconfig import REMOVE
 from resconfig.resconfig import Action
-from resconfig.resconfig import Missing
 from resconfig.resconfig import ResConfig
+from resconfig.resconfig import Sentinel
 from resconfig.utils import expand
 
 
@@ -229,7 +228,7 @@ class TestWatcherTrigger(TestCase):
         conf.register("n", watcher)
         conf.update(n=trial)
         assert conf.get("n") == trial
-        watcher.assert_called_with(Action.ADDED, Missing, trial)
+        watcher.assert_called_with(Action.ADDED, Sentinel.Missing, trial)
 
     @pytest.mark.parametrize(
         "key, newval",
@@ -255,6 +254,6 @@ class TestWatcherTrigger(TestCase):
         assert "x3" in conf
         watcher = mock.Mock()
         conf.register("x3", watcher)
-        conf.update(x3=REMOVE)
+        conf.update(x3=Sentinel.REMOVE)
         assert "x3" not in conf
-        watcher.assert_called_with(Action.REMOVED, self.default["x3"], REMOVE)
+        watcher.assert_called_with(Action.REMOVED, self.default["x3"], Sentinel.REMOVE)

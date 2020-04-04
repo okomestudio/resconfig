@@ -22,11 +22,12 @@ from .utils import normkey
 log = getLogger(__name__)
 
 
-Missing = object()
-"""Sentinel value for missing value."""
+class Sentinel(Enum):
+    Missing = object()
+    """Sentinel value for missing value."""
 
-REMOVE = object()
-"""Sentinel value indicating the config field to be removed."""
+    REMOVE = object()
+    """Sentinel value indicating the config field to be removed."""
 
 
 class Action(Enum):
@@ -158,128 +159,122 @@ class ResConfig(_Watchable, IO):
         """Return the configuration as a dict object."""
         return deepcopy(self._conf)
 
-    def get(self, key: Key, default=Missing):
+    def get(self, key: Key, default=Sentinel.Missing):
         """Get the config item at the key."""
         ref = self._conf
         for k in normkey(key):
             try:
                 ref = ref[k]
             except KeyError:
-                if default is Missing:
+                if default is Sentinel.Missing:
                     raise
                 else:
                     return default
         return deepcopy(ref)
 
-    def __replace(self, conf: dict, newconf: dict, watchers: dict, schema: dict):
-        action = None
-        keys = list(newconf.keys())
-        for key in keys:
-            newval = newconf[key]
+    def __update(
+        self,
+        key: Key,
+        conf: dict,
+        newconf: dict,
+        watchers: dict,
+        schema: dict,
+        replace: bool = False,
+    ):
+        if not isdict(newconf[key]):
+            newval = schema.apply(key, newconf[key])
             action = None
-            key_in_old_conf = key in conf
-
-            if isdict(newval):
-                oldval = deepcopy(conf[key]) if key_in_old_conf else Missing
-
-                if not key_in_old_conf:
-                    conf[key] = Dict()
-                else:
-                    if not isdict(conf[key]):
-                        conf[key] = Dict()
-
-                self.__replace(
-                    conf[key],
-                    newval,
-                    watchers[key] if key in watchers else Dict(),
-                    schema.get(key),
-                )
-
-                if key_in_old_conf:
-                    if oldval != newval:
-                        action = Action.MODIFIED
-                    del conf[key]
-                else:
+            if not isdict(conf):
+                oldval = Sentinel.Missing
+                if newval is not Sentinel.REMOVE:
                     action = Action.ADDED
-
+            elif key not in conf or conf[key] is Sentinel.Missing or not conf[key]:
+                oldval = Sentinel.Missing
+                if newval is not Sentinel.REMOVE:
+                    action = Action.ADDED
             else:
-                if key_in_old_conf:
-                    oldval = deepcopy(conf[key])
-                    if oldval != newval:
-                        action = Action.MODIFIED
-                        newconf[key] = schema.apply(key, newval)
-                    del conf[key]
+                oldval = deepcopy(conf[key])
+                if newval is Sentinel.REMOVE:
+                    action = Action.REMOVED
+                elif oldval != newval:
+                    action = Action.MODIFIED
+            return action, oldval, newval
+
+        oldval_at_dict_node = deepcopy(conf[key]) if key in conf else Sentinel.Missing
+        newval_at_dict_node = Dict()
+
+        conf.setdefault(key, Dict())
+
+        for subkey in newconf[key].keys():
+            action, oldval, newval = self.__update(
+                subkey,
+                conf[key],
+                newconf[key],
+                watchers.get(key, Dict()),
+                schema.get(key),
+                replace=replace,
+            )
+
+            # Actually update the config storage
+            if action in (Action.MODIFIED, Action.ADDED):
+                if isdict(newval):
+                    newval = merge(conf[key][subkey], newval)
+                    newval_at_dict_node[subkey] = merge(
+                        newval_at_dict_node.setdefault(subkey, Dict()), newval
+                    )
                 else:
-                    oldval = Missing
-                    if newval is not REMOVE:
-                        action = Action.ADDED
-                        newconf[key] = schema.apply(key, newval)
+                    newval_at_dict_node[subkey] = newval
 
-            if action is not None:
-                self._reload(watchers, key, action, oldval, newval)
+                if not isdict(conf[key]):
+                    conf[key] = Dict()
+                conf[key][subkey] = newval
 
-        for key in tuple(conf.keys()):
-            oldval = conf[key]
+            elif action in (Action.REMOVED,):
+                del conf[key][subkey]
+                if subkey in newval_at_dict_node:
+                    del newval_at_dict_node[subkey]
+
+            # If an action occurs, trigger its watch functions
             if action is not None:
-                action = Action.REMOVED
-                newval = REMOVE
-                self._reload(watchers, key, action, oldval, newval)
-            del conf[key]
+                self._reload(watchers.get(key, Dict()), subkey, action, oldval, newval)
+
+        if replace:
+            seen = set(newconf[key].keys())
+            for subkey in (k for k in list(conf[key].keys()) if k not in seen):
+                self._reload(
+                    watchers.get(key, Dict()),
+                    subkey,
+                    Action.REMOVED,
+                    conf[key][subkey],
+                    Sentinel.REMOVE,
+                )
+                del conf[key][subkey]
+
+        # Define the action performed on this dict node.
+        action = None
+        if newval_at_dict_node:
+            if not oldval_at_dict_node or oldval_at_dict_node is Sentinel.Missing:
+                action = Action.ADDED
+                oldval_at_dict_node = Sentinel.Missing
+            else:
+                if newval_at_dict_node != oldval_at_dict_node:
+                    action = Action.MODIFIED
+        elif not oldval_at_dict_node:
+            action = Action.REMOVED
+
+        return action, oldval_at_dict_node, newval_at_dict_node
+
+    @flexdictargs
+    def update(self, conf):
+        k = "__ROOT__"  # Insert a layer for the first iteration
+        self.__update(
+            k, {k: self._conf}, {k: conf}, {k: self._watchers}, {k: self._schema}
+        )
 
     @flexdictargs
     def replace(self, conf):
         """Replace config."""
-        self.__replace(self._conf, conf, self._watchers, self._schema)
-        self._conf = conf
-
-    def __update(self, conf: dict, newconf: dict, watchers: dict, schema: dict):
-        for key, newval in newconf.items():
-            action = None
-
-            if isdict(newval):
-                key_in_old_conf = key in conf
-                oldval = deepcopy(conf[key]) if key_in_old_conf else Missing
-
-                if key not in conf:
-                    conf[key] = Dict()
-                else:
-                    if not isdict(conf[key]):
-                        conf[key] = Dict()
-
-                self.__update(
-                    conf[key],
-                    newval,
-                    watchers[key] if key in watchers else Dict(),
-                    schema.get(key),
-                )
-
-                if key_in_old_conf:
-                    if isdict(oldval):
-                        newval = merge(oldval, newval)
-
-                    if oldval != newval:
-                        action = Action.MODIFIED
-                else:
-                    action = Action.ADDED
-
-            else:
-                if key in conf:
-                    oldval = deepcopy(conf[key])
-                    if newval is REMOVE:
-                        action = Action.REMOVED
-                        del conf[key]
-                    elif oldval != newval:
-                        action = Action.MODIFIED
-                        conf[key] = schema.apply(key, newval)
-                else:
-                    oldval = Missing
-                    if newval is not REMOVE:
-                        action = Action.ADDED
-                        conf[key] = schema.apply(key, newval)
-
-            if action is not None:
-                self._reload(watchers, key, action, oldval, newval)
-
-    @flexdictargs
-    def update(self, conf):
-        self.__update(self._conf, conf, self._watchers, self._schema)
+        k = "__ROOT__"  # Insert a layer for the first iteration
+        self.__update(
+            k, {k: self._conf}, {k: conf}, {k: self._watchers}, {k: self._schema}, True
+        )
