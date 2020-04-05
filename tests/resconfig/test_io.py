@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 from resconfig import ResConfig
-from resconfig.io import _suffix_to_filetype
+from resconfig.io.io import _suffix_to_filetype
 
 from .test_resconfig import TestCase
 
@@ -46,10 +46,10 @@ class TestIO(TestCase):
 
     def test_with_suffix(self, filename):
         conf = ResConfig()
-        with mock.patch("resconfig.io._suffix_to_filetype") as func:
+        with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
             conf.save(filename)
         func.assert_called_with(filename)
-        with mock.patch("resconfig.io._suffix_to_filetype") as func:
+        with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
             conf.load(filename)
         func.assert_called_with(filename)
 
