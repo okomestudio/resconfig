@@ -63,7 +63,7 @@ class Verify(Install):
             sys.exit(info)
 
 
-requires = ["PyYAML>=5.3.1"]
+requires = ["PyYAML>=5.3.1", "toml>=0.10.0"]
 
 setup_requires = []
 

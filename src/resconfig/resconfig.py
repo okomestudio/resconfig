@@ -68,7 +68,7 @@ class ResConfig(Watchable, IO):
 
     def asdict(self) -> dict:
         """Return the configuration as a dict object."""
-        return deepcopy(self._conf)
+        return dict(deepcopy(self._conf))
 
     def get(self, key: Key, default=Sentinel.Missing):
         """Get the config item at the key."""

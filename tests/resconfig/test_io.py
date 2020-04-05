@@ -17,6 +17,7 @@ class TestSuffixToFiletype:
             ("a", "ini"),
             ("a.ini", "ini"),
             ("a.json", "json"),
+            ("a.toml", "toml"),
             ("a.yaml", "yaml"),
             ("a.yml", "yaml"),
         ],
@@ -96,6 +97,26 @@ class TestJSON(TestIO):
 
         conf = ResConfig()
         conf.load_from_json(filename)
+        assert "x3.y1" in conf
+        assert conf.get("x3.y1") == self.default["x3"]["y1"]
+
+
+class TestTOML(TestIO):
+    @pytest.fixture
+    def filename(self):
+        with self.tempfile(".toml") as filename:
+            yield filename
+
+    def test(self, filename):
+        conf = ResConfig(self.default)
+        conf.save_to_toml(filename)
+        with open(filename) as f:
+            content = f.read()
+        assert "x1 = 1" in content
+        assert "[x3.y3]\nz1 = 3" in content
+
+        conf = ResConfig()
+        conf.load_from_toml(filename)
         assert "x3.y1" in conf
         assert conf.get("x3.y1") == self.default["x3"]["y1"]
 
