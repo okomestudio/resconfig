@@ -1,9 +1,9 @@
-from collections import OrderedDict
-
 import yaml
 
+from ..dicttype import Dict
 
-class _OrderedDumper(yaml.Dumper):
+
+class _Dumper(yaml.Dumper):
     pass
 
 
@@ -13,11 +13,11 @@ def _dict_representer(dumper, data):
     )
 
 
-_OrderedDumper.add_representer(OrderedDict, _dict_representer)
+_Dumper.add_representer(Dict, _dict_representer)
 
 
 def dump(data, stream, **kwargs):
-    yaml.dump(data, stream, _OrderedDumper, **kwargs)
+    yaml.dump(data, stream, _Dumper, **kwargs)
 
 
 def load(stream, **kwargs):

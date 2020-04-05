@@ -1,5 +1,5 @@
 from .dicttype import Dict
-from .utils import normkey
+from .dicttype import normkey
 
 
 class Schema(Dict):

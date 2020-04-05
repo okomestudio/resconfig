@@ -5,6 +5,11 @@ from logging import getLogger
 from pathlib import Path
 
 from .dicttype import Dict
+from .dicttype import expand
+from .dicttype import flexdictargs
+from .dicttype import isdict
+from .dicttype import merge
+from .dicttype import normkey
 from .io import IO
 from .schema import Schema
 from .typing import Any
@@ -13,11 +18,6 @@ from .typing import Key
 from .typing import List
 from .typing import Optional
 from .typing import Text
-from .utils import expand
-from .utils import flexdictargs
-from .utils import isdict
-from .utils import merge
-from .utils import normkey
 
 log = getLogger(__name__)
 

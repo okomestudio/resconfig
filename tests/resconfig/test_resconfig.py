@@ -2,13 +2,13 @@ from collections.abc import MutableMapping
 from unittest import mock
 
 import pytest
+from resconfig.dicttype import expand
+from resconfig.dicttype import isdict
+from resconfig.dicttype import merge
+from resconfig.dicttype import normkeyget
 from resconfig.resconfig import Action
 from resconfig.resconfig import ResConfig
 from resconfig.resconfig import Sentinel
-from resconfig.utils import expand
-from resconfig.utils import isdict
-from resconfig.utils import merge
-from resconfig.utils import normkeyget
 
 
 class TestCase:
