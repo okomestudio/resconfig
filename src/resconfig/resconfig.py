@@ -5,7 +5,7 @@ from logging import getLogger
 from pathlib import Path
 
 from .dicttype import Dict
-from .dicttype import expand
+from .dicttype import _get
 from .dicttype import flexdictargs
 from .dicttype import isdict
 from .dicttype import merge
@@ -52,26 +52,25 @@ class _Watchable:
 
     def deregister(self, key: Key, func: Optional[WatchFunction] = None):
         """Deregister the watch function for the key."""
-        r = self._watchers
         try:
-            for k in normkey(key):
-                r = r[k]
-        except KeyError:
+            ref, lastkey = _get(self._watchers, key)
+        except Exception:
             raise KeyError(f"Watch function not registered for {key}")
+        ref = ref[lastkey]
 
         if func is None:
-            if self.__watcher_key in r:
-                del r[self.__watcher_key]
+            if self.__watcher_key in ref:
+                del ref[self.__watcher_key]
         else:
             try:
-                r[self.__watcher_key].remove(func)
+                ref[self.__watcher_key].remove(func)
             except KeyError:
                 raise KeyError(f"Watch functions not registered for {key}")
             except ValueError:
                 raise ValueError(f"{func!r} not registered for {key}")
             # If this was the last watch function, remove the node.
-            if not r[self.__watcher_key]:
-                del r[self.__watcher_key]
+            if not ref[self.__watcher_key]:
+                del ref[self.__watcher_key]
 
     def register(self, key: Key, func: WatchFunction):
         """Register the watch function for the key."""
@@ -126,15 +125,13 @@ class ResConfig(_Watchable, IO):
         schema: dict = None,
     ):
         self._watchers = Dict()
-        if watchers:
-            watchers = expand(watchers)
-            for k, v in watchers.items():
-                self.register(k, v)
+        for k, v in (watchers or {}).items():
+            self.register(k, v)
 
-        self._schema = Schema(expand(schema) if schema else Dict())
+        self._schema = Schema(schema or {})
 
         self._conf = Dict()
-        default = expand(default) if default else Dict()
+        default = Dict(default or {})
         if paths:
             for path in paths:
                 path = Path(path)
@@ -146,14 +143,7 @@ class ResConfig(_Watchable, IO):
             self.update(default)
 
     def __contains__(self, key):
-        ref = self._conf
-        for k in normkey(key):
-            if not isdict(ref):
-                return False
-            if k not in ref:
-                return False
-            ref = ref[k]
-        return True
+        return key in self._conf
 
     def asdict(self) -> dict:
         """Return the configuration as a dict object."""
@@ -161,16 +151,14 @@ class ResConfig(_Watchable, IO):
 
     def get(self, key: Key, default=Sentinel.Missing):
         """Get the config item at the key."""
-        ref = self._conf
-        for k in normkey(key):
-            try:
-                ref = ref[k]
-            except KeyError:
-                if default is Sentinel.Missing:
-                    raise
-                else:
-                    return default
-        return deepcopy(ref)
+        try:
+            value = self._conf[key]
+        except Exception:
+            if default is Sentinel.Missing:
+                raise
+            else:
+                return default
+        return deepcopy(value)
 
     def __update(
         self,

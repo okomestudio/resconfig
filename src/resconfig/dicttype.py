@@ -11,6 +11,10 @@ _default = object()
 
 
 class Dict(OrderedDict):
+    def __init__(self, *args, **kwargs):
+        args, kwargs = _expand_args(args, kwargs)
+        super().__init__(*args, **kwargs)
+
     def __repr__(self):
         items = []
         for k, v in self.items():
@@ -68,21 +72,12 @@ class Dict(OrderedDict):
         return (super() if ref is self else ref).setdefault(lastkey, default)
 
     def update(self, *args, **kwargs):
+        args, kwargs = _expand_args(args, kwargs)
         if args:
-            if len(args) == 1:
-                e = args[0]
-                if hasattr(e, "keys"):
-                    e = expand(e)
-                    for k in e:
-                        self[k] = e[k]
-                else:
-                    for k, v in e:
-                        v = expand({k: v})
-                        for kk, vv in v.items():
-                            self[kk] = vv
-            else:
+            if len(args) != 1:
                 raise TypeError(f"update expected at most 1 argument, got {len(args)}")
-        kwargs = expand(kwargs)
+            for k, v in args[0].items():
+                self[k] = v
         for k in kwargs:
             self[k] = kwargs[k]
 
@@ -92,6 +87,19 @@ class Dict(OrderedDict):
         for key in iterable:
             dic = merge(dic, expand({key: value}))
         return dic
+
+
+def _expand_args(args, kwargs):
+    if args:
+        arg = args[0]
+        if hasattr(arg, "keys"):
+            new = expand(arg)
+        else:
+            new = Dict()
+            for key, val in arg:
+                new = merge(new, expand({key: val}))
+        args = [new] + list(args[1:])
+    return args, expand(kwargs)
 
 
 def _key_error(obj, key):
@@ -160,10 +168,10 @@ def merge(d1: dict, d2: dict) -> dict:
     return _merge(deepcopy(d1), deepcopy(d2))
 
 
-def expand(d: dict) -> Dict:
+def expand(d: dict) -> dict:
     if not isdict(d):
         return d
-    new = Dict()
+    new = {}
     for key, value in d.items():
         keys = list(normkey(key))
         if len(keys) == 1:
