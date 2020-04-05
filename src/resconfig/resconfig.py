@@ -54,15 +54,14 @@ class ResConfig(Watchable, IO):
         self._conf = Dict()
         default = Dict(default or {})
         if paths:
-            d = self.config_from_file(paths)
-            default = merge(default, d)
+            default.merge(self.config_from_file(paths))
         if default:
             self.update(default)
 
     def __contains__(self, key):
         return key in self._conf
 
-    def asdict(self) -> dict:
+    def _asdict(self) -> dict:
         """Return the configuration as a dict object."""
         return dict(deepcopy(self._conf))
 

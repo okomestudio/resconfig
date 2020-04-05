@@ -15,7 +15,7 @@ class TestBasicAPI(TestCase):
         conf = ResConfig(expected)
         conf.save(filename)
         conf = ResConfig(paths=["somenonexistingfile", filename])
-        assert conf.asdict() == expected
+        assert conf._asdict() == expected
 
     def test_init_with_watcher(self):
         def watcher(*args):
@@ -42,7 +42,7 @@ class TestBasicAPI(TestCase):
 
     def test_asdict(self):
         rc = ResConfig(self.default)
-        result = rc.asdict()
+        result = rc._asdict()
         assert isinstance(result, dict)
         assert rc._conf == result
 
@@ -96,7 +96,7 @@ class TestReplace(TestCase):
         a.replace(self.newconf)
         b = ResConfig()
         b.replace(**self.newconf)
-        assert a.asdict() == b.asdict()
+        assert a._asdict() == b._asdict()
 
     def test_invalid_args(self):
         conf = ResConfig(self.default)
@@ -105,9 +105,9 @@ class TestReplace(TestCase):
 
     def test(self):
         conf = ResConfig(self.default)
-        assert conf.asdict() != self.newconf
+        assert conf._asdict() != self.newconf
         conf.replace(self.newconf)
-        assert conf.asdict() == self.newconf
+        assert conf._asdict() == self.newconf
 
 
 class TestUpdate(TestCase):

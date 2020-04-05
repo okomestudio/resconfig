@@ -60,7 +60,7 @@ class IO:
             "yaml": yaml.dump,
         }.get(filetype, ini.dump)
         with open(filename, "w") as f:
-            dump(self.asdict(), f)
+            dump(self._asdict(), f)
 
     def save(self, filename):
         self.__save(filename, _suffix_to_filetype(filename))
