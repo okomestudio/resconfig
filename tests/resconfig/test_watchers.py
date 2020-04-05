@@ -1,12 +1,13 @@
+from copy import deepcopy
 from unittest import mock
 
 import pytest
 from resconfig import ResConfig
 from resconfig.actions import Action
 from resconfig.dicttype import expand
+from resconfig.dicttype import get
 from resconfig.dicttype import isdict
 from resconfig.dicttype import merge
-from resconfig.dicttype import normkeyget
 from resconfig.resconfig import Sentinel
 
 from .test_resconfig import TestCase
@@ -138,14 +139,14 @@ class TestWatchersOnUpdate(TestCase):
         for k in remain:
             assert k in conf
         watcher.assert_called_with(
-            Action.REMOVED, normkeyget(self.default, key), Sentinel.REMOVE
+            Action.REMOVED, get(self.default, key), Sentinel.REMOVE
         )
 
     def test_removed(self, default_config_key, all_default_config_keys):
         key = default_config_key
         conf = ResConfig(self.default)
         assert key in conf
-        oldval = normkeyget(self.default, key)
+        oldval = get(self.default, key)
         watcher = mock.Mock()
         conf.register(key, watcher)
         conf.update({key: Sentinel.REMOVE})

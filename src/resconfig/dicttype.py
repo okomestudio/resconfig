@@ -1,11 +1,11 @@
 from collections import OrderedDict
 from collections.abc import MutableMapping
-from copy import deepcopy
 from functools import wraps
 
 from .typing import Any
 from .typing import Generator
 from .typing import Key
+from .typing import Tuple
 
 _default = object()
 
@@ -115,7 +115,7 @@ def _type_error(obj, key):
     return TypeError(f"'{type(obj)}' object at '{key}' is not subscriptable")
 
 
-def _get(dic, key, create=False):
+def _get(dic: dict, key: Key, create: bool = False) -> Tuple[dict, Key]:
     keys = list(normkey(key))
     ref = dic
     for idx, k in enumerate(keys[:-1]):
@@ -131,6 +131,11 @@ def _get(dic, key, create=False):
     if not isdict(ref):
         raise _type_error(ref, key)
     return ref, keys[-1]
+
+
+def get(dic: dict, key: Key) -> Any:
+    ref, key = _get(dic, key)
+    return ref[key]
 
 
 def normkey(key: Key) -> Generator[str, None, None]:
