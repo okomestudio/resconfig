@@ -161,7 +161,7 @@ class TestDict:
 
     def test_update_error(self, d):
         with pytest.raises(TypeError):
-            d.update(0, 1)
+            d.update({"foo": "bar"}, 1)
 
     @pytest.mark.parametrize(
         "args, kwargs, expected",
