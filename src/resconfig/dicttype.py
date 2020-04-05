@@ -11,6 +11,8 @@ _default = object()
 
 
 class Dict(OrderedDict):
+    _create = None
+
     def __init__(self, *args, **kwargs):
         args, kwargs = _expand_args(args, kwargs)
         super().__init__(*args, **kwargs)
@@ -23,19 +25,19 @@ class Dict(OrderedDict):
 
     def __contains__(self, key):
         try:
-            ref, lastkey = _get(self, key)
+            ref, lastkey = _get(self, key, self._create)
         except Exception:
             return False
         return (super() if ref is self else ref).__contains__(lastkey)
 
     def __delitem__(self, key):
-        ref, lastkey = _get(self, key)
+        ref, lastkey = _get(self, key, self._create)
         if lastkey not in ref:
             raise _key_error(ref, key)
         return (super() if ref is self else ref).__delitem__(lastkey)
 
     def __getitem__(self, key):
-        ref, lastkey = _get(self, key)
+        ref, lastkey = _get(self, key, self._create)
         if ref is self:
             return super().__getitem__(lastkey)
         else:
@@ -44,31 +46,31 @@ class Dict(OrderedDict):
             return ref.__getitem__(lastkey)
 
     def __setitem__(self, key, value):
-        ref, lastkey = _get(self, key)
+        ref, lastkey = _get(self, key, self._create)
         return (super() if ref is self else ref).__setitem__(lastkey, value)
 
     def get(self, key, default=None):
         try:
-            ref, lastkey = _get(self, key)
+            ref, lastkey = _get(self, key, self._create)
         except Exception:
             return default
         return (super() if ref is self else ref).get(lastkey, default)
 
     def pop(self, key, d=_default):
         if d is _default:
-            ref, lastkey = _get(self, key)
+            ref, lastkey = _get(self, key, self._create)
             if lastkey not in ref:
                 raise _key_error(ref, key)
             return (super() if ref is self else ref).pop(lastkey)
         else:
             try:
-                ref, lastkey = _get(self, key)
+                ref, lastkey = _get(self, key, self._create)
             except Exception:
                 return d
             return (super() if ref is self else ref).pop(lastkey, d)
 
     def setdefault(self, key, default=None):
-        ref, lastkey = _get(self, key)
+        ref, lastkey = _get(self, key, self._create)
         return (super() if ref is self else ref).setdefault(lastkey, default)
 
     def update(self, *args, **kwargs):
@@ -110,14 +112,17 @@ def _type_error(obj, key):
     return TypeError(f"'{type(obj)}' object at '{key}' is not subscriptable")
 
 
-def _get(dic, key):
+def _get(dic, key, create=False):
     keys = list(normkey(key))
     ref = dic
     for idx, k in enumerate(keys[:-1]):
         try:
             ref = ref[k]
         except KeyError:
-            raise _key_error(ref, ".".join(keys[: idx + 1]))
+            if not create:
+                raise _key_error(ref, ".".join(keys[: idx + 1]))
+            ref[k] = dic.__class__()
+            ref = ref[k]
         except TypeError:
             raise _type_error(ref, ".".join(keys[: idx + 1]))
     if not isdict(ref):
@@ -171,7 +176,7 @@ def merge(d1: dict, d2: dict) -> dict:
 def expand(d: dict) -> dict:
     if not isdict(d):
         return d
-    new = {}
+    new = d.__class__()
     for key, value in d.items():
         keys = list(normkey(key))
         if len(keys) == 1:
@@ -184,7 +189,7 @@ def expand(d: dict) -> dict:
             ref = new
             for idx, k in enumerate(keys[:-1]):
                 if k not in ref:
-                    ref[k] = Dict()
+                    ref[k] = d.__class__()
                 ref = ref[k]
                 if not isdict(ref):
                     k = ".".join(keys[: idx + 1])
