@@ -76,13 +76,11 @@ class ResConfig(Watchable, IO):
                 return default
         return deepcopy(value)
 
-    def __update(
-        self, key: Key, conf: dict, newconf: dict, schema: dict, replace: bool = False
-    ):
+    def __update(self, key: Key, conf: dict, newconf: dict, replace: bool = False):
         _key = key[-1]
 
         if not isdict(newconf[_key]):
-            newval = schema.apply(_key, newconf[_key])
+            newval = self._schema.apply(key[1:], newconf[_key])
             action = None
             if not isdict(conf):
                 oldval = Sentinel.MISSING
@@ -110,11 +108,7 @@ class ResConfig(Watchable, IO):
                 conf[_key] = Dict()
 
             action, oldval, newval = self.__update(
-                key + (subkey,),
-                conf[_key],
-                newconf[_key],
-                schema.get(_key),
-                replace=replace,
+                key + (subkey,), conf[_key], newconf[_key], replace=replace
             )
 
             # Actually update the config storage
@@ -166,11 +160,12 @@ class ResConfig(Watchable, IO):
 
     @flexdictargs
     def update(self, conf):
+        """Update the current config with the new one."""
         k = "__ROOT__"  # Insert a layer for the first iteration
-        self.__update((k,), {k: self._conf}, {k: conf}, {k: self._schema})
+        self.__update((k,), {k: self._conf}, {k: conf})
 
     @flexdictargs
     def replace(self, conf):
-        """Replace config."""
+        """Replace the current config with the new one."""
         k = "__ROOT__"  # Insert a layer for the first iteration
-        self.__update((k,), {k: self._conf}, {k: conf}, {k: self._schema}, True)
+        self.__update((k,), {k: self._conf}, {k: conf}, replace=True)

@@ -61,28 +61,6 @@ class TestGet(TestCase):
         with pytest.raises(KeyError):
             conf.get("non")
 
-    def test_with_schema(self):
-        key = "x3.y1"
-        type = int
-        trial = "123"
-        conf = ResConfig(schema={key: type})
-        conf.update({key: trial})
-        v = conf.get(key)
-        assert isinstance(v, type)
-        assert v == type(trial)
-
-    def test_with_schema_with_default(self):
-        default = object()
-        conf = ResConfig(schema={"a": int})
-        assert "a" not in conf
-        conf.get("a", default) is default
-
-    def test_with_schema_with_error(self):
-        conf = ResConfig(schema={"a": int})
-        with pytest.raises(TypeError) as exc:
-            conf.update(a="xyz")
-        assert "cannot be converted to" in str(exc)
-
 
 class TestReplace(TestCase):
     newconf = {
