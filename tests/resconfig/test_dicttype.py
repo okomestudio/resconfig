@@ -4,6 +4,7 @@ import pytest
 from resconfig.dicttype import Dict
 from resconfig.dicttype import expand
 from resconfig.dicttype import merge
+from resconfig.dicttype import normkey
 
 
 class TestDict:
@@ -222,3 +223,17 @@ class TestExpand:
         with pytest.raises(TypeError) as exc:
             print(expand(trial))
         assert "cannot convert" in str(exc)
+
+
+class TestNormkey:
+    @pytest.mark.parametrize(
+        "key, expected",
+        [("a", ["a"]), ("a.b.c", ["a", "b", "c"]), (("a", "b", "c"), ["a", "b", "c"])],
+    )
+    def test(self, key, expected):
+        assert list(normkey(key)) == expected
+
+    @pytest.mark.parametrize("key, expected", [(3, TypeError), (["a", "b"], TypeError)])
+    def test_error(self, key, expected):
+        with pytest.raises(expected):
+            list(normkey(key))
