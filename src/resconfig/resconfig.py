@@ -1,7 +1,6 @@
 from copy import deepcopy
 from enum import Enum
 from logging import getLogger
-from pathlib import Path
 
 from .actions import Action
 from .dicttype import Dict
@@ -24,16 +23,17 @@ class Sentinel(Enum):
     """Sentinel value for missing value."""
 
     REMOVE = object()
-    """Sentinel value indicating the config field to be removed."""
+    """Sentinel value indicating the config key to be removed."""
 
 
 class ResConfig(Watchable, IO):
-    """Resource Configuration.
+    """Application resource configuration.
 
     Args:
-        default: Default configuration.
-        watchers: Configuration watchers.
-        schema: Configuration schema.
+        default: Default config.
+        paths: List of paths to config files.
+        watchers: Config watchers.
+        schema: Config schema.
 
     """
 
