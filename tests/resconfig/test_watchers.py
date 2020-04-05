@@ -110,7 +110,7 @@ class TestWatchersOnUpdate(TestCase):
         oldval = conf.get(key)
         conf.update({key: newval})
         if isdict(newval):
-            expanded = merge(oldval, expand(newval))
+            expanded = merge(deepcopy(oldval), expand(newval))
         else:
             expanded = newval
         assert conf.get(key) == expanded

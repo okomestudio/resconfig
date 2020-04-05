@@ -90,6 +90,9 @@ class Dict(OrderedDict):
             dic = merge(dic, expand({key: value}))
         return dic
 
+    def merge(self, d):
+        merge(self, d)
+
 
 def _expand_args(args, kwargs):
     if args:
@@ -144,33 +147,30 @@ def normkey(key: Key) -> Generator[str, None, None]:
         raise TypeError("key must be str or tuple")
 
 
-def normkeyget(dic: dict, key: Key, default: Any = None) -> Any:
-    ref = dic
-    for k in normkey(key):
-        try:
-            ref = ref[k]
-        except KeyError:
-            return default
-    return ref
+def __merge(a, b):
+    for k in b:
+        if k in a:
+            if isdict(a[k]):
+                if isdict(b[k]):
+                    __merge(a[k], b[k])
+                else:
+                    if a[k] != b[k]:
+                        a[k] = b[k]
+            else:
+                if a[k] != b[k]:
+                    a[k] = b[k]
+        else:
+            a[k] = b[k]
+    return a
 
 
-def _merge(d1, d2):
-    for k, v in d1.items():
-        if k in d2:
-            if isdict(v) and isdict(d2[k]):
-                d2[k] = _merge(v, d2[k])
-    d3 = d1.copy()
-    d3.update(d2)
-    return d3
+def merge(a: dict, b: dict) -> dict:
+    """Merge dict b into a recursively.
 
-
-def merge(d1: dict, d2: dict) -> dict:
-    """Update two dicts recursively.
-
-    If either mapping has leaves that are non-dicts, the second's leaf overwrites the
-    first's.
+    If either dict has leaves that are non-dicts, the leaf in dict b overwrites that in
+    dict a.
     """
-    return _merge(deepcopy(d1), deepcopy(d2))
+    return __merge(a, b)
 
 
 def expand(d: dict) -> dict:

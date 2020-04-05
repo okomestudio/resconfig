@@ -54,12 +54,8 @@ class ResConfig(Watchable, IO):
         self._conf = Dict()
         default = Dict(default or {})
         if paths:
-            for path in paths:
-                path = Path(path)
-                if path.is_file():
-                    content = self._load_as_dict(path)
-                    default = merge(default, content)
-                    break
+            d = self.config_from_file(paths)
+            default = merge(default, d)
         if default:
             self.update(default)
 

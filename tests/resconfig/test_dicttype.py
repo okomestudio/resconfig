@@ -194,7 +194,10 @@ class TestMerge:
         ],
     )
     def test(self, d1, d2, expected):
-        assert merge(d1, d2) == expected
+        objid = id(d1)
+        result = merge(d1, d2)
+        assert result == expected
+        assert id(result) == objid
 
 
 class TestExpand:
