@@ -96,7 +96,7 @@ class TestWatchersOnUpdate(TestCase):
         conf.register(key, watcher)
         conf.update({key: newval})
         assert conf.get(key) == newval
-        watcher.assert_called_with(Action.ADDED, Sentinel.Missing, newval)
+        watcher.assert_called_with(Action.ADDED, Sentinel.MISSING, newval)
 
     @pytest.mark.parametrize(
         "key, newval",

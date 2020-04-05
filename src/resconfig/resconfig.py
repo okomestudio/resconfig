@@ -20,7 +20,7 @@ log = getLogger(__name__)
 
 
 class Sentinel(Enum):
-    Missing = object()
+    MISSING = object()
     """Sentinel value for missing value."""
 
     REMOVE = object()
@@ -70,12 +70,12 @@ class ResConfig(Watchable, IO):
         """Return the configuration as a dict object."""
         return dict(deepcopy(self._conf))
 
-    def get(self, key: Key, default=Sentinel.Missing):
+    def get(self, key: Key, default=Sentinel.MISSING):
         """Get the config item at the key."""
         try:
             value = self._conf[key]
         except Exception:
-            if default is Sentinel.Missing:
+            if default is Sentinel.MISSING:
                 raise
             else:
                 return default
@@ -90,11 +90,11 @@ class ResConfig(Watchable, IO):
             newval = schema.apply(_key, newconf[_key])
             action = None
             if not isdict(conf):
-                oldval = Sentinel.Missing
+                oldval = Sentinel.MISSING
                 if newval is not Sentinel.REMOVE:
                     action = Action.ADDED
-            elif _key not in conf or conf[_key] is Sentinel.Missing or not conf[_key]:
-                oldval = Sentinel.Missing
+            elif _key not in conf or conf[_key] is Sentinel.MISSING or not conf[_key]:
+                oldval = Sentinel.MISSING
                 if newval is not Sentinel.REMOVE:
                     action = Action.ADDED
             else:
@@ -105,7 +105,7 @@ class ResConfig(Watchable, IO):
                     action = Action.MODIFIED
             return action, oldval, newval
 
-        oldval_at_dict_node = deepcopy(conf[_key]) if _key in conf else Sentinel.Missing
+        oldval_at_dict_node = deepcopy(conf[_key]) if _key in conf else Sentinel.MISSING
         newval_at_dict_node = Dict()
 
         conf.setdefault(_key, Dict())
@@ -158,9 +158,9 @@ class ResConfig(Watchable, IO):
         # Define the action performed on this dict node.
         action = None
         if newval_at_dict_node:
-            if not oldval_at_dict_node or oldval_at_dict_node is Sentinel.Missing:
+            if not oldval_at_dict_node or oldval_at_dict_node is Sentinel.MISSING:
                 action = Action.ADDED
-                oldval_at_dict_node = Sentinel.Missing
+                oldval_at_dict_node = Sentinel.MISSING
             else:
                 if newval_at_dict_node != oldval_at_dict_node:
                     action = Action.MODIFIED
