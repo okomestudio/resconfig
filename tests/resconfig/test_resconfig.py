@@ -1,4 +1,3 @@
-from collections.abc import MutableMapping
 from unittest import mock
 
 import pytest
@@ -32,7 +31,7 @@ class TestBasicAPI(TestCase):
 
         key = "a"
         conf = ResConfig(watchers={key: watcher})
-        assert watcher in conf.watchers(key)
+        assert watcher in conf._watchers.funcs(key)
 
     @pytest.mark.parametrize(
         "key, expected",
@@ -114,7 +113,7 @@ class TestWatchable(TestCase):
         def watch_func(*args, **kwargs):
             called(*args, **kwargs)
 
-        assert watch_func in conf.watchers("x1")
+        assert watch_func in conf._watchers.funcs("x1")
 
         conf.reload()
         called.assert_called_with(

@@ -1,23 +1,20 @@
 from copy import deepcopy
 from enum import Enum
-from functools import wraps
 from logging import getLogger
 from pathlib import Path
 
+from .actions import Action
 from .dicttype import Dict
-from .dicttype import _get
 from .dicttype import flexdictargs
 from .dicttype import isdict
 from .dicttype import merge
-from .dicttype import normkey
 from .io import IO
 from .schema import Schema
-from .typing import Any
-from .typing import Callable
 from .typing import Key
 from .typing import List
-from .typing import Optional
 from .typing import Text
+from .watchers import Watchable
+from .watchers import Watchers
 
 log = getLogger(__name__)
 
@@ -30,84 +27,7 @@ class Sentinel(Enum):
     """Sentinel value indicating the config field to be removed."""
 
 
-class Action(Enum):
-    """Action performed by the update method."""
-
-    ADDED = 1
-    MODIFIED = 2
-    REMOVED = 3
-    RELOADED = 4
-
-
-WatchFunction = Callable[[Action, Any, Any], None]
-"""Callback function, i.e., watcher, that triggers on an event happening at the key. It
-takes in Action value, old, and new values.
-"""
-
-
-class _Watchable:
-    """Mix-in for adding the watch functionality."""
-
-    __watcher_key = "__watchers__"
-
-    def deregister(self, key: Key, func: Optional[WatchFunction] = None):
-        """Deregister the watch function for the key."""
-        try:
-            ref, lastkey = _get(self._watchers, key)
-        except Exception:
-            raise KeyError(f"Watch function not registered for {key}")
-        ref = ref[lastkey]
-
-        if func is None:
-            if self.__watcher_key in ref:
-                del ref[self.__watcher_key]
-        else:
-            try:
-                ref[self.__watcher_key].remove(func)
-            except KeyError:
-                raise KeyError(f"Watch functions not registered for {key}")
-            except ValueError:
-                raise ValueError(f"{func!r} not registered for {key}")
-            # If this was the last watch function, remove the node.
-            if not ref[self.__watcher_key]:
-                del ref[self.__watcher_key]
-
-    def register(self, key: Key, func: WatchFunction):
-        """Register the watch function for the key."""
-        r = self._watchers
-        for k in normkey(key):
-            r = r.setdefault(k, Dict())
-        r.setdefault(self.__watcher_key, []).append(func)
-
-    def _reload(self, watchers, key, action, oldval, newval):
-        if key in watchers and self.__watcher_key in watchers[key]:
-            for func in watchers[key][self.__watcher_key]:
-                func(action, oldval, newval)
-
-    def reload(self):
-        """Trigger all watch functions using the current config."""
-        for key, val in self._conf.items():
-            self._reload(self._watchers, key, Action.RELOADED, val, val)
-
-    def watchers(self, key: Key) -> List[WatchFunction]:
-        """Get all watch functions registered for the key."""
-        return self._watchers[key][self.__watcher_key]
-
-    def watch(self, key: Key) -> WatchFunction:
-        """Decorate a function to make it a watch function for the key."""
-
-        def deco(f):
-            @wraps(f)
-            def _deco(*args, **kwargs):
-                return f(*args, **kwargs)
-
-            self.register(key, _deco)
-            return _deco
-
-        return deco
-
-
-class ResConfig(_Watchable, IO):
+class ResConfig(Watchable, IO):
     """Resource Configuration.
 
     Args:
@@ -124,9 +44,10 @@ class ResConfig(_Watchable, IO):
         watchers: dict = None,
         schema: dict = None,
     ):
-        self._watchers = Dict()
+        self._watchers = Watchers()
         for k, v in (watchers or {}).items():
-            self.register(k, v)
+            for func in v if isinstance(v, (list, tuple)) else [v]:
+                self.register(k, v)
 
         self._schema = Schema(schema or {})
 
@@ -161,83 +82,78 @@ class ResConfig(_Watchable, IO):
         return deepcopy(value)
 
     def __update(
-        self,
-        key: Key,
-        conf: dict,
-        newconf: dict,
-        watchers: dict,
-        schema: dict,
-        replace: bool = False,
+        self, key: Key, conf: dict, newconf: dict, schema: dict, replace: bool = False
     ):
-        if not isdict(newconf[key]):
-            newval = schema.apply(key, newconf[key])
+        _key = key[-1]
+
+        if not isdict(newconf[_key]):
+            newval = schema.apply(_key, newconf[_key])
             action = None
             if not isdict(conf):
                 oldval = Sentinel.Missing
                 if newval is not Sentinel.REMOVE:
                     action = Action.ADDED
-            elif key not in conf or conf[key] is Sentinel.Missing or not conf[key]:
+            elif _key not in conf or conf[_key] is Sentinel.Missing or not conf[_key]:
                 oldval = Sentinel.Missing
                 if newval is not Sentinel.REMOVE:
                     action = Action.ADDED
             else:
-                oldval = deepcopy(conf[key])
+                oldval = deepcopy(conf[_key])
                 if newval is Sentinel.REMOVE:
                     action = Action.REMOVED
                 elif oldval != newval:
                     action = Action.MODIFIED
             return action, oldval, newval
 
-        oldval_at_dict_node = deepcopy(conf[key]) if key in conf else Sentinel.Missing
+        oldval_at_dict_node = deepcopy(conf[_key]) if _key in conf else Sentinel.Missing
         newval_at_dict_node = Dict()
 
-        conf.setdefault(key, Dict())
+        conf.setdefault(_key, Dict())
 
-        for subkey in newconf[key].keys():
-            if not isdict(conf[key]):
-                conf[key] = Dict()
+        for subkey in newconf[_key].keys():
+            if not isdict(conf[_key]):
+                conf[_key] = Dict()
 
             action, oldval, newval = self.__update(
-                subkey,
-                conf[key],
-                newconf[key],
-                watchers.get(key, Dict()),
-                schema.get(key),
+                key + (subkey,),
+                conf[_key],
+                newconf[_key],
+                schema.get(_key),
                 replace=replace,
             )
 
             # Actually update the config storage
             if action in (Action.MODIFIED, Action.ADDED):
                 if isdict(newval):
-                    newval = merge(conf[key][subkey], newval)
+                    newval = merge(conf[_key][subkey], newval)
                     newval_at_dict_node[subkey] = merge(
                         newval_at_dict_node.setdefault(subkey, Dict()), newval
                     )
                 else:
                     newval_at_dict_node[subkey] = newval
 
-                conf[key][subkey] = newval
+                conf[_key][subkey] = newval
 
             elif action in (Action.REMOVED,):
-                del conf[key][subkey]
+                del conf[_key][subkey]
                 if subkey in newval_at_dict_node:
                     del newval_at_dict_node[subkey]
 
             # If an action occurs, trigger its watch functions
-            if action is not None:
-                self._reload(watchers.get(key, Dict()), subkey, action, oldval, newval)
+            if action is not None and self._watchers.exists(key[1:] + (subkey,)):
+                self._watchers.trigger(key[1:] + (subkey,), action, oldval, newval)
 
         if replace:
-            seen = set(newconf[key].keys())
-            for subkey in (k for k in list(conf[key].keys()) if k not in seen):
-                self._reload(
-                    watchers.get(key, Dict()),
-                    subkey,
-                    Action.REMOVED,
-                    conf[key][subkey],
-                    Sentinel.REMOVE,
-                )
-                del conf[key][subkey]
+            seen = set(newconf[_key].keys())
+            for subkey in (k for k in list(conf[_key].keys()) if k not in seen):
+                if self._watchers.exists(key[1:] + (subkey,)):
+                    self._watchers.trigger(
+                        key[1:] + (subkey,),
+                        Action.REMOVED,
+                        conf[_key][subkey],
+                        Sentinel.REMOVE,
+                    )
+                del conf[_key][subkey]
 
         # Define the action performed on this dict node.
         action = None
@@ -256,14 +172,10 @@ class ResConfig(_Watchable, IO):
     @flexdictargs
     def update(self, conf):
         k = "__ROOT__"  # Insert a layer for the first iteration
-        self.__update(
-            k, {k: self._conf}, {k: conf}, {k: self._watchers}, {k: self._schema}
-        )
+        self.__update((k,), {k: self._conf}, {k: conf}, {k: self._schema})
 
     @flexdictargs
     def replace(self, conf):
         """Replace config."""
         k = "__ROOT__"  # Insert a layer for the first iteration
-        self.__update(
-            k, {k: self._conf}, {k: conf}, {k: self._watchers}, {k: self._schema}, True
-        )
+        self.__update((k,), {k: self._conf}, {k: conf}, {k: self._schema}, True)
