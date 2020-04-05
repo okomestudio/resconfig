@@ -1,6 +1,7 @@
 from pathlib import Path
 
 from ..dicttype import Dict
+from ..typing import List
 from . import ini
 from . import json
 from . import toml
@@ -75,3 +76,17 @@ class IO:
 
     def save_to_yaml(self, filename):
         self.__save(filename, "yaml")
+
+    def config_from_file(self, paths: List[str]) -> Dict:
+        """Read the config from a file as a Dict.
+
+        This method searches for the first existing file from the list.
+        """
+        dic = Dict()
+        for path in paths:
+            path = Path(path)
+            if path.is_file():
+                content = self._load_as_dict(path)
+                dic.merge(content)
+                break
+        return dic
