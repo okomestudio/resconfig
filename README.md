@@ -8,7 +8,7 @@
 *resconfig* is a minimalistic application configuration library for
 Python applications. The features include:
 
-- Multiple configuration file formats: INI, JSON, and YAML.
+- Multiple configuration file formats: INI, JSON, TOML, and YAML.
 
 - Dynamic reloading of resource configurations: Watch functions can be
   attached to nested keys, so that the configurations can be reloaded
@@ -45,3 +45,8 @@ $ pre-commit install
 ```bash
 $ python setup.py test
 ```
+
+## License
+
+[Apache License, Version 2.0](https://raw.githubusercontent.com/okomestudio/resconfig/development/LICENSE.txt
+)
