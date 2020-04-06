@@ -63,20 +63,54 @@ class TestWatchable(TestCase):
             {"z1": 4, "z2": "text_x3.y4.z2", "dummy": 4},
         )
 
-    def test_reload(self):
+    def test_watch_decorator(self):
+        key = "x3.y2"
         called = mock.Mock()
         conf = ResConfig(self.default)
 
-        @conf.watch("x1")
+        @conf.watch(key)
         def watch_func(*args, **kwargs):
             called(*args, **kwargs)
 
-        assert watch_func in conf._watchers.funcs("x1")
-
+        assert watch_func in conf._watchers.funcs(key)
         conf.reload()
-        called.assert_called_with(
-            Action.RELOADED, self.default["x1"], self.default["x1"]
-        )
+        val = get(self.default, key)
+        called.assert_called_with(Action.RELOADED, val, val)
+
+
+class TestReload(TestCase):
+    def test(self):
+        watchers = {
+            "x1": mock.Mock(),
+            "x2": mock.Mock(),
+            "x3": mock.Mock(),
+            "x3.y1": mock.Mock(),
+            "x3.y2": mock.Mock(),
+            "x3.y3": mock.Mock(),
+            "x3.y3.z1": mock.Mock(),
+            "x3.y3.z2": mock.Mock(),
+            "x3.y4": mock.Mock(),
+            "x3.y4.z1": mock.Mock(),
+            "x3.y4.z2": mock.Mock(),
+            "x4.y1": mock.Mock(),
+            "x4.y2": mock.Mock(),
+            "x4.y3": mock.Mock(),
+            "x4.y3.z1": mock.Mock(),
+            "x4.y3.z2": mock.Mock(),
+            "x4.y4": mock.Mock(),
+            "x4.y4.z1": mock.Mock(),
+            "x4.y4.z2": mock.Mock(),
+        }
+        conf = ResConfig(self.default, watchers=watchers)
+        for key, func in watchers.items():
+            v = get(self.default, key)
+            func.assert_called_with(Action.ADDED, Sentinel.MISSING, v)
+            assert func.call_count == 1
+        conf.reload()
+        for key, func in watchers.items():
+            v = get(self.default, key)
+            func.assert_called_with(Action.RELOADED, v, v)
+            assert func.call_count == 2
 
 
 class TestWatchersOnUpdate(TestCase):

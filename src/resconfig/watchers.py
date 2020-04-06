@@ -2,6 +2,7 @@ from functools import wraps
 
 from .actions import Action
 from .dicttype import Dict
+from .dicttype import isdict
 from .typing import Key
 from .typing import Optional
 from .typing import WatchFunction
@@ -60,10 +61,24 @@ class Watchable:
         """Register the watch function for the key."""
         self._watchers.register(key, func)
 
+    def __reload(self, key, d):
+        _key = key[-1]
+        if not isdict(d[_key]):
+            self._watchers.trigger(key[1:], Action.RELOADED, d[_key], d[_key])
+            return
+        for subkey, v in d[_key].items():
+            self.__reload(key + (subkey,), d[_key])
+        self._watchers.trigger(key[1:], Action.RELOADED, d[_key], d[_key])
+
     def reload(self):
-        """Trigger all watch functions using the current config."""
-        for key, val in self._conf.items():
-            self._watchers.trigger(key, Action.RELOADED, val, val)
+        """Trigger all watch functions using the current configuration.
+
+        Note that the watch functions for the keys that do not exist in the current
+        configuration will not be triggered.
+        """
+        # The reason why the recursive visit is on the conf, not the watchers is that we
+        # want to trigger functions in order of configuration.
+        self.__reload(("__ROOT__",), {"__ROOT__": self._conf})
 
     def watch(self, key: Key) -> WatchFunction:
         """Decorate a function to make it a watch function for the key."""
