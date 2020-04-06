@@ -6,31 +6,69 @@
 # resconfig
 
 *resconfig* is a minimalistic application configuration library for
-Python applications. The features include:
+Python. It can:
 
-- Multiple configuration file formats: INI, JSON, TOML, and YAML.
+- Read from multiple configuration file formats: INI, JSON, TOML, and
+  YAML.
 
-- Dynamic reloading of resource configurations: Watch functions can be
-  attached to nested keys, so that the configurations can be reloaded
-  and the resources be managed based on the changes while the main
-  application stays running.
+- Dynamically reload configuration at run time: Watch functions can be
+  attached to any keys within the configuration, so that separate
+  resources can be reloaded and managed.
 
-- Schema: Type casting can be performed based on fixed schema.
+- Apply schema: Type casting can be performed.
 
-- Flexible getter key format: The underlying configuration data
-  structure is a nested dict, but the item can be obtained with a
-  single key or tuple.
+- Access nested configuration item with a '.'-delimited string key:
+  The underlying configuration data structure is nested dicts, but no
+  need to manually traverse or use the verbose `dict[k1][k2]` form.
 
 
 ## Installation
 
 ``` bash
-$ pip install .
+$ pip install resconfig
 ```
 
 ## Basic Usage
 
-TODO.
+``` python
+from resconfig import ResConfig
+
+config = ResConfig()  # create empty config
+config.load_from_yaml("pg.yaml")  # load config from file
+config.get("pg.dbname")  # get value at config["pg"]["dbname"]
+config = ResConfig({"pg": {"dbname": "foo"}})  # with default config
+```
+
+### Reloading Configuration
+
+``` python
+import signal
+
+from resconfig import ResConfig
+
+config = ResConfig()
+
+conn = None
+
+
+@config.watch("pg")
+def pg_conn(action, old, new):
+    nonlocal conn
+    if action == Action.ADDED:
+        conn = psycopg2.connect(dbname=new.get("dbname"))
+    elif action in (Action.MODIFIED, Action.RELOADED):
+        conn.close()
+        conn = psycopg2.connect(dbname=new.get("dbname"))
+    elif action == Action.REMOVED:
+        conn.close()
+
+
+def reload(*args):
+    config.load_from_yaml("pg.yaml")
+
+
+signal.signal(signal.SIGHUP, reload)
+```
 
 
 ## Development
@@ -42,7 +80,7 @@ $ pre-commit install
 
 ### Running Tests
 
-```bash
+``` bash
 $ python setup.py test
 ```
 
