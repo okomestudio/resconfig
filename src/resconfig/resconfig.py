@@ -9,9 +9,11 @@ from .dicttype import isdict
 from .dicttype import merge
 from .io import IO
 from .schema import Schema
+from .typing import Any
+from .typing import FilePath
 from .typing import Key
 from .typing import List
-from .typing import Text
+from .typing import Optional
 from .watchers import Watchable
 from .watchers import Watchers
 
@@ -66,7 +68,11 @@ class ResConfig(Watchable, IO):
         """Return the configuration as a dict object."""
         return dict(deepcopy(self._conf))
 
-    def get(self, key: Key, default=Sentinel.MISSING):
+    def reset(self):
+        """Reset config to default."""
+        self.replace(deepcopy(self._default))
+
+    def get(self, key: Key, default: Optional[Any] = Sentinel.MISSING) -> Any:
         """Get the config item at the key."""
         try:
             value = self._conf[key]
@@ -160,13 +166,13 @@ class ResConfig(Watchable, IO):
         return action, oldval_at_dict_node, newval_at_dict_node
 
     @flexdictargs
-    def update(self, conf):
+    def update(self, conf: dict):
         """Update the current config with the new one."""
         k = "__ROOT__"  # Insert a layer for the first iteration
         self.__update((k,), {k: self._conf}, {k: conf})
 
     @flexdictargs
-    def replace(self, conf):
+    def replace(self, conf: dict):
         """Replace the current config with the new one."""
         k = "__ROOT__"  # Insert a layer for the first iteration
         self.__update((k,), {k: self._conf}, {k: conf}, replace=True)

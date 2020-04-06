@@ -3,7 +3,9 @@ from functools import wraps
 from .actions import Action
 from .dicttype import Dict
 from .dicttype import isdict
+from .typing import Any
 from .typing import Key
+from .typing import List
 from .typing import Optional
 from .typing import WatchFunction
 
@@ -12,7 +14,7 @@ class Watchers(Dict):
     _create = True
     __watcher_key = "__watchers__"
 
-    def deregister(self, key, func=None):
+    def deregister(self, key: Key, func: Optional[WatchFunction] = None):
         """Deregister the watch function for the key."""
         ref = self.get(key)
         if not ref:
@@ -37,15 +39,18 @@ class Watchers(Dict):
             self.__watcher_key, []
         ).append(func)
 
-    def exists(self, key: Key):
+    def exists(self, key: Key) -> bool:
+        """Test if any watch function exists for the key."""
         return key in self and self.__watcher_key in self[key]
 
-    def funcs(self, key):
+    def funcs(self, key: Key) -> List[WatchFunction]:
+        """Get the list of watch functions for the key."""
         if key in self:
             return self[key].get(self.__watcher_key, [])
         return []
 
-    def trigger(self, key, action, oldval, newval):
+    def trigger(self, key: Key, action: Action, oldval: Any, newval: Any):
+        """Trigger the watch functions for the key."""
         for func in self.funcs(key):
             func(action, oldval, newval)
 
