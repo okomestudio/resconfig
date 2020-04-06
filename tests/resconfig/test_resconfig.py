@@ -14,7 +14,7 @@ class TestBasicAPI(TestCase):
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
         conf.save(filename)
-        conf = ResConfig(paths=["somenonexistingfile", filename])
+        conf = ResConfig(config_paths=["somenonexistingfile", filename])
         assert conf._asdict() == expected
 
     def test_init_with_watcher(self):

@@ -36,11 +36,11 @@ class TestIO(TestCase):
         finally:
             os.remove(filename)
 
-    def test_load_as_dict(self, filename):
+    def test_read_as_dict(self, filename):
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
         conf.save(filename)
-        content = conf._load_as_dict(filename)
+        content = conf._read_as_dict(filename)
         assert isinstance(content, dict)
         assert content == expected
 

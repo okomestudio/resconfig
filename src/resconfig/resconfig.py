@@ -31,7 +31,7 @@ class ResConfig(Watchable, IO):
 
     Args:
         default: Default config.
-        paths: List of paths to config files.
+        config_paths: List of paths to config files.
         watchers: Config watchers.
         schema: Config schema.
 
@@ -40,7 +40,7 @@ class ResConfig(Watchable, IO):
     def __init__(
         self,
         default: dict = None,
-        paths: List[Text] = None,
+        config_paths: List[FilePath] = None,
         watchers: dict = None,
         schema: dict = None,
     ):
@@ -51,12 +51,13 @@ class ResConfig(Watchable, IO):
 
         self._schema = Schema(schema or {})
 
+        self._default = Dict(default or {})
+        self._config_paths = config_paths or []
         self._conf = Dict()
-        default = Dict(default or {})
-        if paths:
-            default.merge(self.config_from_file(paths))
-        if default:
-            self.update(default)
+        if self._config_paths:
+            self.load_from_config_paths()
+        else:
+            self.update(deepcopy(self._default))
 
     def __contains__(self, key):
         return key in self._conf
