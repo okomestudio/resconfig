@@ -9,7 +9,7 @@ class TestCase:
         yield
 
 
-class TestBasicAPI(TestCase):
+class TestInit(TestCase):
     def test_init_with_files(self, filename):
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
@@ -25,6 +25,14 @@ class TestBasicAPI(TestCase):
         conf = ResConfig(watchers={key: watcher})
         assert watcher in conf._watchers.funcs(key)
 
+    def test_skip_load_on_init(self, default_config):
+        conf = ResConfig(default_config)
+        assert conf._asdict() == default_config
+        conf = ResConfig(default_config, skip_load_on_init=True)
+        assert conf._asdict() == {}
+
+
+class TestBasicAPI(TestCase):
     @pytest.mark.parametrize(
         "key, expected",
         [
