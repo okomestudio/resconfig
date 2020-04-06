@@ -4,7 +4,7 @@ from unittest import mock
 import pytest
 from resconfig import ResConfig
 from resconfig.actions import Action
-from resconfig.dicttype import expand
+from resconfig.dicttype import Dict
 from resconfig.dicttype import get
 from resconfig.dicttype import isdict
 from resconfig.dicttype import merge
@@ -100,20 +100,30 @@ class TestReload(TestCase):
             "x4.y4": mock.Mock(),
             "x4.y4.z1": mock.Mock(),
             "x4.y4.z2": mock.Mock(),
+            "foo.bar": mock.Mock(),
         }
         conf = ResConfig(self.default, watchers=watchers)
+
         for key, func in watchers.items():
-            v = get(self.default, key)
-            func.assert_called_with(Action.ADDED, Sentinel.MISSING, v)
-            assert func.call_count == 1
+            if key not in conf:
+                func.assert_not_called
+            else:
+                v = get(self.default, key)
+                func.assert_called_with(Action.ADDED, Sentinel.MISSING, v)
+                assert func.call_count == 1
+
         conf.reload()
+
         for key, func in watchers.items():
-            v = get(self.default, key)
-            func.assert_called_with(Action.RELOADED, v, v)
-            assert func.call_count == 2
+            if key not in conf:
+                func.assert_not_called
+            else:
+                v = get(self.default, key)
+                func.assert_called_with(Action.RELOADED, v, v)
+                assert func.call_count == 2
 
 
-class TestWatchersOnUpdate(TestCase):
+class TestUpdate(TestCase):
     @pytest.mark.parametrize(
         "key, newval",
         [
@@ -134,22 +144,24 @@ class TestWatchersOnUpdate(TestCase):
         watcher.assert_called_with(Action.ADDED, Sentinel.MISSING, newval)
 
     @pytest.mark.parametrize(
-        "key, newval",
-        [("x1", 5), ("x3.y1", 5), ("x3.y4", {"z3": 5}), ("x3.y4", {"z3.w": 5})],
+        "key, newval, expected",
+        [
+            ("x1", 5, 5),
+            ("x3.y1", 5, 5),
+            ("x3.y4", {"z3": 5}, {"z1": 4, "z2": "text_x3.y4.z2", "z3": 5}),
+            ("x3.y4", {"z3.w": 5}, {"z1": 4, "z2": "text_x3.y4.z2", "z3": {"w": 5}}),
+            ("x3.y3", 4, 4),
+        ],
     )
-    def test_modified(self, key, newval):
+    def test_modified(self, key, newval, expected):
         conf = ResConfig(self.default)
         assert key in conf
         watcher = mock.Mock()
         conf.register(key, watcher)
         oldval = conf.get(key)
         conf.update({key: newval})
-        if isdict(newval):
-            expanded = merge(deepcopy(oldval), expand(newval))
-        else:
-            expanded = newval
-        assert conf.get(key) == expanded
-        watcher.assert_called_with(Action.MODIFIED, oldval, expanded)
+        assert conf.get(key) == expected
+        watcher.assert_called_with(Action.MODIFIED, oldval, expected)
 
     @pytest.mark.parametrize(
         "key, removed, remain",
