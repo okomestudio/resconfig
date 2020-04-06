@@ -36,6 +36,7 @@ class ResConfig(Watchable, IO):
         config_paths: List of paths to config files.
         watchers: Config watchers.
         schema: Config schema.
+        skip_load_on_init: True to skip config load on initialization.
 
     """
 
@@ -45,6 +46,7 @@ class ResConfig(Watchable, IO):
         config_paths: List[FilePath] = None,
         watchers: dict = None,
         schema: dict = None,
+        skip_load_on_init: bool = False,
     ):
         self._watchers = Watchers()
         for k, v in (watchers or {}).items():
@@ -52,14 +54,15 @@ class ResConfig(Watchable, IO):
                 self.register(k, v)
 
         self._schema = Schema(schema or {})
-
         self._default = Dict(default or {})
         self._config_paths = config_paths or []
         self._conf = Dict()
-        if self._config_paths:
-            self.load_from_config_paths()
-        else:
-            self.update(deepcopy(self._default))
+
+        if not skip_load_on_init:
+            if self._config_paths:
+                self.load_from_config_paths()
+            else:
+                self.update(deepcopy(self._default))
 
     def __contains__(self, key):
         return key in self._conf
