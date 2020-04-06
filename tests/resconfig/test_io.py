@@ -5,6 +5,7 @@ from unittest import mock
 
 import pytest
 from resconfig import ResConfig
+from resconfig.io.io import FileType
 from resconfig.io.io import _suffix_to_filetype
 
 from .test_resconfig import TestCase
@@ -14,12 +15,12 @@ class TestSuffixToFiletype:
     @pytest.mark.parametrize(
         "name, filetype",
         [
-            ("a", "ini"),
-            ("a.ini", "ini"),
-            ("a.json", "json"),
-            ("a.toml", "toml"),
-            ("a.yaml", "yaml"),
-            ("a.yml", "yaml"),
+            ("a", FileType.ini),
+            ("a.ini", FileType.ini),
+            ("a.json", FileType.json),
+            ("a.toml", FileType.toml),
+            ("a.yaml", FileType.yaml),
+            ("a.yml", FileType.yaml),
         ],
     )
     def test(self, name, filetype):
