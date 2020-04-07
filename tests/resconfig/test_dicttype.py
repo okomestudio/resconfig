@@ -14,14 +14,21 @@ class TestDict:
     def d(self):
         yield Dict(deepcopy(self.default))
 
-    def test_contains(self, d):
-        assert "foo" in d
-        assert "foo.bar" in d
-        assert "foo.bar.baz" in d
-        assert "foo.bar.baz.qux" not in d
-        assert "foo.baz" not in d
-        assert "bar" not in d
-        assert "bar.baz" not in d
+    @pytest.mark.parametrize(
+        "key, expected",
+        [
+            ("foo", True),
+            ("foo.bar", True),
+            ("foo.bar.baz", True),
+            ("foo.bar.baz.qux", False),
+            ("foo.baz", False),
+            ("bar", False),
+            ("bar.baz", False),
+        ],
+    )
+    def test_contains(self, d, key, expected):
+        assert (key in d) is expected
+        assert (tuple(key.split(".")) in d) is expected
 
     @pytest.mark.parametrize(
         "key, expected", [("foo", {}), ("foo.bar", {"foo": {"qux": "quux"}})]
