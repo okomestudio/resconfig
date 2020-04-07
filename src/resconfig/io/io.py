@@ -77,7 +77,7 @@ class IO:
         self.__load(filename, _suffix_to_filetype(filename))
 
     def load_from_config_paths(self, paths: List[FilePath] = None):
-        """Load config from the first existing file from the list. 
+        """Load config from the first existing file from the list.
 
         If the paths are not given, then it is loaded from the default config paths
         provided at the time of ResConfig instantiation, if any.
@@ -112,8 +112,12 @@ class IO:
             FileType.toml: toml.dump,
             FileType.yaml: yaml.dump,
         }.get(filetype, ini.dump)
+
+        d = self._asdict()
+        self._schema.unapply_all(d)
+
         with open(filename, "w") as f:
-            dump(self._asdict(), f)
+            dump(d, f)
 
     def save(self, filename: FilePath):
         """Save config to the file.
