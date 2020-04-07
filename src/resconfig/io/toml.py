@@ -7,4 +7,4 @@ def load(f):
 
 
 def dump(content, f):
-    f.write(_dump(content))
+    f.write(_dump(dict(content)))

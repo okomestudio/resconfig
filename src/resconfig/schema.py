@@ -21,5 +21,8 @@ class Schema(Dict):
         return self._cast(cls, value)
 
     def unapply_all(self, d):
-        # TODO: Implement this
-        return d
+        for key in self.allkeys():
+            print(key, "in", d)
+            if key in d:
+                print("applying")
+                d[key] = self.unapply(key, d[key])

@@ -113,7 +113,7 @@ class IO:
             FileType.yaml: yaml.dump,
         }.get(filetype, ini.dump)
 
-        d = self._asdict()
+        d = deepcopy(self._conf)
         self._schema.unapply_all(d)
 
         with open(filename, "w") as f:

@@ -1,5 +1,6 @@
 import os
 from contextlib import contextmanager
+from pathlib import Path
 from tempfile import NamedTemporaryFile
 from unittest import mock
 
@@ -90,7 +91,7 @@ class TestJSON(TestIO):
             yield filename
 
     def test(self, filename):
-        conf = ResConfig(self.default)
+        conf = ResConfig(self.default, schema={"x2": (Path, str)})
         conf.save_to_json(filename)
         with open(filename) as f:
             content = f.read()
@@ -109,7 +110,8 @@ class TestTOML(TestIO):
             yield filename
 
     def test(self, filename):
-        conf = ResConfig(self.default)
+        conf = ResConfig(self.default, schema={"x2": (Path, str)})
+        # conf = ResConfig(self.default)
         conf.save_to_toml(filename)
         with open(filename) as f:
             content = f.read()
@@ -129,7 +131,8 @@ class TestYAML(TestIO):
             yield filename
 
     def test(self, filename):
-        conf = ResConfig(self.default)
+        conf = ResConfig(self.default, schema={"x2": (Path, str)})
+        # conf = ResConfig(self.default)
         conf.save_to_yaml(filename)
         with open(filename) as f:
             content = f.read()
