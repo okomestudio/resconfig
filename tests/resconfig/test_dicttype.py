@@ -183,6 +183,10 @@ class TestDict:
     def test_fromkeys(self, d, args, kwargs, expected):
         assert d.fromkeys(*args, **kwargs) == expected
 
+    def test_allkeys(self, d):
+        assert list(d.allkeys()) == [("foo", "bar", "baz"), ("foo", "qux")]
+        assert list(d.allkeys(as_str=True)) == ["foo.bar.baz", "foo.qux"]
+
 
 class TestMerge:
     @pytest.mark.parametrize(

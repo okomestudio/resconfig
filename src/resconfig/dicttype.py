@@ -90,6 +90,22 @@ class Dict(OrderedDict):
             dic = merge(dic, expand({key: value}))
         return dic
 
+    # custom utility methods
+
+    def __allkeys(self, key, d):
+        _key = key[-1]
+        if not isdict(d[_key]):
+            yield key[1:]
+            return
+        for k in d[_key]:
+            for i in self.__allkeys(key + (k,), d[_key]):
+                yield i
+
+    def allkeys(self, as_str=False):
+        """Generate all keys to the leaves"""
+        for key in self.__allkeys(("__ROOT__",), {"__ROOT__": self}):
+            yield ".".join(key) if as_str else key
+
     def merge(self, d):
         merge(self, d)
 
