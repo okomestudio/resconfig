@@ -105,7 +105,7 @@ config = ResConfig(watchers={"nested.key": act_on_nested_key})
 ## Development
 
 ``` bash
-$ pip install .[dev]
+$ pip install -e .[dev]
 $ pre-commit install
 ```
 
