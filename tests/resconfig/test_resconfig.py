@@ -55,6 +55,27 @@ class TestBasicAPI(TestCase):
         assert rc._conf == result
 
 
+class TestPrepareConfig(TestCase):
+    def test_default(self):
+        rc = ResConfig(self.default)
+        assert rc._prepare_config() == rc._default
+
+    def test_from_files(self):
+        from_files = [{"x1": 55, "x4.y3.z2": "foo"}]
+        rc = ResConfig(self.default)
+        result = rc._prepare_config(from_files=from_files)
+        for key in ("x1", "x4.y3.z2"):
+            assert result[key] == from_files[0][key]
+
+    def test_from_env(self):
+        from_files = [{"x1": 55, "x4.y3.z2": "foo"}]
+        env = {"X1": 55, "X4__Y3__Z2": "bar"}
+        rc = ResConfig(self.default)
+        result = rc._prepare_config(from_files=from_files, from_env=env)
+        assert result["x1"] == env["X1"]
+        assert result["x4.y3.z2"] == env["X4__Y3__Z2"]
+
+
 class TestGet(TestCase):
     def test(self):
         conf = ResConfig(self.default)

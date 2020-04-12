@@ -65,10 +65,8 @@ class IO:
         return dic
 
     def __load(self, filename: FilePath, filetype=None):
-        conf = deepcopy(self._default)
-        loaded = self._read_as_dict(filename, filetype)
-        conf.merge(loaded)
-        self.replace(conf)
+        from_files = [self._read_as_dict(filename, filetype)]
+        self.replace(self._prepare_config(from_files=from_files))
 
     def load(self, filename: FilePath):
         """Load config from the file.
@@ -82,12 +80,12 @@ class IO:
         If the paths are not given, then it is loaded from the default config paths
         provided at the time of ResConfig instantiation, if any.
         """
-        conf = deepcopy(self._default)
         config_paths = paths or self._config_paths
-        if config_paths:
-            conf.merge(self._read_from_files_as_dict(config_paths))
-        if conf:
-            self.replace(conf)
+        from_files = (
+            [self._read_from_files_as_dict(config_paths)] if config_paths else None
+        )
+        if from_files:
+            self.replace(self._prepare_config(from_files=from_files))
 
     def load_from_ini(self, filename: FilePath):
         """Load config from the INI file."""

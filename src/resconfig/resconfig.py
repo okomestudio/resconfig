@@ -1,3 +1,4 @@
+import os
 from copy import deepcopy
 from enum import Enum
 from logging import getLogger
@@ -59,13 +60,39 @@ class ResConfig(Watchable, IO):
         self._conf = Dict()
 
         if not skip_load_on_init:
-            if self._config_paths:
-                self.load_from_config_paths()
-            else:
-                self.update(deepcopy(self._default))
+            from_files = (
+                [self._read_from_files_as_dict(self._config_paths)]
+                if self._config_paths
+                else None
+            )
+            self.update(self._prepare_config(from_files=from_files))
 
     def __contains__(self, key):
         return key in self._conf
+
+    def _prepare_config(
+        self,
+        from_files: Optional[List[Dict]] = None,
+        from_env: Optional[os._Environ] = None,
+        from_clarg_conf=None,
+        from_clargs=None,
+    ):
+        """Prepare a Dict to update the configuration with."""
+        new = deepcopy(self._default)
+
+        for conf in from_files or []:
+            new.merge(conf)
+
+        # Update from environment variables.
+        env = os.environ if from_env is None else from_env
+        for key in self._default.allkeys():
+            envkey = ("__".join(key)).upper()
+            if envkey in env:
+                new[key] = env[envkey]
+
+        # TODO: Add config file from command-line arg
+        # TODO: Add command-line arguments
+        return new
 
     def _asdict(self) -> dict:
         """Return the configuration as a dict object."""
@@ -73,7 +100,7 @@ class ResConfig(Watchable, IO):
 
     def reset(self):
         """Reset config to default."""
-        self.replace(deepcopy(self._default))
+        self.replace(self._prepare_config())
 
     def get(self, key: Key, default: Optional[Any] = Sentinel.MISSING) -> Any:
         """Get the config item at the key."""
