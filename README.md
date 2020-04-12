@@ -12,6 +12,9 @@ can:
 - Read from multiple configuration file formats: INI, JSON, TOML, and
   YAML.
 
+- Read from environment variables: Configuration can be easily
+  overridden with environment variables.
+
 - Dynamically reload configuration at run time: Watch functions can be
   attached to any keys within the configuration, so that separate
   resources can be reloaded and managed.
@@ -45,6 +48,27 @@ dbname = config.get("pg.dbname")  # get value at config["pg"]["dbname"]
 config = ResConfig({"pg": {"dbname": "foo"}})  # with default config
 config = ResConfig({"pg.dbname": "foo"}})      # this also works
 ```
+
+
+### Configuration through Environment Variables
+
+For the configuration items that exist by default, environment
+variables can override their values. Say your application, *myapp.py*
+defines the following configuration by default.
+
+``` bash
+config = ResConfig({"pg.dbname": "foo"}})
+```
+
+When you run this app, you can use the `PG__DBNAME` environment
+variable to override the default config:
+
+``` bash
+$ PG__DBNAME=bar python myapp.py  # config.get('pg.dbname') will be `bar`
+```
+
+Note that for nested keys, a double underscore (`__`) delimits them,
+and all keys are upper-cased by convention, as in this example.
 
 
 ### Watching for Configuration Changes
