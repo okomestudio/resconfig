@@ -67,15 +67,15 @@ requires = ["PyYAML>=5.3.1", "toml>=0.10.0"]
 
 setup_requires = []
 
-dev_requires = ["black==19.10b0", "isort==4.3.21", "pre-commit==2.2.0"]
+dev_requires = ["black>=19.10b0", "flake8>=3.7.9", "isort>=4.3.21", "pre-commit>=2.2.0"]
 
-test_requires = ["coverage==5.0.4", "pytest==5.4.1", "pytest-cov==2.8.1"]
+test_requires = ["coverage>=5.0.4", "pytest>=5.4.1", "pytest-cov>=2.8.1"]
 
 
 setup(
     name="resconfig",
     version=version,
-    description="Application resource configuration library for Python",
+    description="A minimalistic application configuration library for Python",
     long_description=readme,
     long_description_content_type="text/markdown",
     author=author,
@@ -85,13 +85,17 @@ setup(
     classifiers=[
         "Development Status :: 3 - Alpha",
         "Intended Audience :: Developers",
-        "Natural Language :: English",
         "License :: OSI Approved :: Apache Software License",
-        "Programming Language :: Python",
+        "Natural Language :: English",
+        "Programming Language :: Python :: 3",
         "Programming Language :: Python :: 3.6",
         "Programming Language :: Python :: 3.7",
         "Programming Language :: Python :: 3.8",
         "Programming Language :: Python :: Implementation :: CPython",
+        "Programming Language :: Python",
+        "Topic :: Software Development :: Libraries :: Python Modules",
+        "Topic :: System :: Installation/Setup",
+        "Topic :: Utilities",
     ],
     packages=find_packages("src"),
     package_data={"": ["LICENSE"]},
@@ -103,6 +107,6 @@ setup(
     cmdclass={"test": PyTest, "verify": Verify},
     install_requires=requires,
     tests_require=test_requires,
-    extras_require={"test": test_requires, "dev": dev_requires},
+    extras_require={"test": test_requires, "dev": dev_requires + test_requires},
     entry_points={"console_scripts": []},
 )
