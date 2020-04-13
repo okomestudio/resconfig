@@ -64,15 +64,15 @@ class IO:
                 break
         return dic
 
-    def __load(self, filename: FilePath, filetype=None):
+    def __load_from_file(self, filename: FilePath, filetype=None):
         from_files = [self._read_as_dict(filename, filetype)]
         self.replace(self._prepare_config(from_files=from_files))
 
-    def load(self, filename: FilePath):
+    def load_from_file(self, filename: FilePath):
         """Load config from the file.
 
         The file type is inferred from the filename extension."""
-        self.__load(filename, _suffix_to_filetype(filename))
+        self.__load_from_file(filename, _suffix_to_filetype(filename))
 
     def load_from_config_paths(self, paths: List[FilePath] = None):
         """Load config from the first existing file from the list.
@@ -89,19 +89,19 @@ class IO:
 
     def load_from_ini(self, filename: FilePath):
         """Load config from the INI file."""
-        self.__load(filename, FileType.ini)
+        self.__load_from_file(filename, FileType.ini)
 
     def load_from_json(self, filename: FilePath):
         """Load config from the JSON file."""
-        self.__load(filename, FileType.json)
+        self.__load_from_file(filename, FileType.json)
 
     def load_from_toml(self, filename: FilePath):
         """Load config from the TOML file."""
-        self.__load(filename, FileType.toml)
+        self.__load_from_file(filename, FileType.toml)
 
     def load_from_yaml(self, filename: FilePath):
         """Load config from the YAML file."""
-        self.__load(filename, FileType.yaml)
+        self.__load_from_file(filename, FileType.yaml)
 
     def __save(self, filename: FilePath, filetype: Optional[FileType] = None):
         dump = {

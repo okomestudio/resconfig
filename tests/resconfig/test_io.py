@@ -52,7 +52,7 @@ class TestIO(TestCase):
             conf.save(filename)
         func.assert_called_with(filename)
         with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
-            conf.load(filename)
+            conf.load_from_file(filename)
         func.assert_called_with(filename)
 
 
