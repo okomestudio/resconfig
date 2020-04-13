@@ -61,12 +61,7 @@ class ResConfig(Watchable, IO):
         self._conf = Dict()
 
         if not skip_load_on_init:
-            from_files = (
-                [self._read_from_files_as_dict(self._config_paths)]
-                if self._config_paths
-                else None
-            )
-            self.update(self._prepare_config(from_files=from_files))
+            self.load()
 
     def read_from_argparse(self, args, config_paths=None, keymap=None):
         keymap = keymap or {}
@@ -119,6 +114,14 @@ class ResConfig(Watchable, IO):
     def _asdict(self) -> dict:
         """Return the configuration as a dict object."""
         return dict(deepcopy(self._conf))
+
+    def load(self):
+        from_files = (
+            [self._read_from_files_as_dict(self._config_paths)]
+            if self._config_paths
+            else None
+        )
+        self.replace(self._prepare_config(from_files=from_files))
 
     def reset(self):
         """Reset config to default."""
