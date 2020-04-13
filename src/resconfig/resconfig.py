@@ -56,6 +56,7 @@ class ResConfig(Watchable, IO):
 
         self._schema = Schema(schema or {})
         self._default = Dict(default or {})
+        self._clargs = Dict()
         self._config_paths = config_paths or []
         self._conf = Dict()
 
@@ -66,6 +67,21 @@ class ResConfig(Watchable, IO):
                 else None
             )
             self.update(self._prepare_config(from_files=from_files))
+
+    def read_from_argparse(self, args, config_paths=None, keymap=None):
+        keymap = keymap or {}
+        conf = Dict()
+        if config_paths:
+            conf.merge(self._read_from_files_as_dict(config_paths))
+
+        for k, v in vars(args).items():
+            if k in keymap:
+                k = keymap[k]
+            else:
+                k = ".".join(k.split("_"))
+            conf.update({k: v})
+
+        self._clargs = conf
 
     def __contains__(self, key):
         return key in self._conf
@@ -79,7 +95,6 @@ class ResConfig(Watchable, IO):
         self,
         from_files: Optional[List[Dict]] = None,
         from_env: Optional[os._Environ] = None,
-        from_clarg_conf=None,
         from_clargs=None,
     ):
         """Prepare a Dict to update the configuration with."""
@@ -88,15 +103,17 @@ class ResConfig(Watchable, IO):
         for conf in from_files or []:
             new.merge(conf)
 
-        # Update from environment variables.
         env = os.environ if from_env is None else from_env
+        clargs = self._clargs if from_clargs is None else from_clargs
+
         for key in self._default.allkeys():
             envkey = ("__".join(key)).upper()
             if envkey in env:
                 new[key] = env[envkey]
 
-        # TODO: Add config file from command-line arg
-        # TODO: Add command-line arguments
+            if key in clargs:
+                new[key] = clargs[key]
+
         return new
 
     def _asdict(self) -> dict:
