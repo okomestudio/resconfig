@@ -70,6 +70,11 @@ class ResConfig(Watchable, IO):
     def __contains__(self, key):
         return key in self._conf
 
+    def __getitem__(self, key):
+        if key not in self:
+            raise KeyError(key)
+        return self.get(key)
+
     def _prepare_config(
         self,
         from_files: Optional[List[Dict]] = None,

@@ -76,6 +76,17 @@ class TestPrepareConfig(TestCase):
         assert result["x4.y3.z2"] == env["X4__Y3__Z2"]
 
 
+class TestIndexAccess(TestCase):
+    def test(self):
+        conf = ResConfig(self.default)
+        assert conf["x1"] == conf.get("x1")
+
+    def test_nonexisting_key(self):
+        conf = ResConfig(self.default)
+        with pytest.raises(KeyError):
+            conf["dne"]
+
+
 class TestGet(TestCase):
     def test(self):
         conf = ResConfig(self.default)
