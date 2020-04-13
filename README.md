@@ -64,11 +64,11 @@ When you run this app, you can use the `PG__DBNAME` environment
 variable to override the default config:
 
 ``` bash
-$ PG__DBNAME=bar python myapp.py  # config.get('pg.dbname') will be `bar`
+$ PG_DBNAME=bar python myapp.py  # config.get('pg.dbname') will be `bar`
 ```
 
-Note that for nested keys, a double underscore (`__`) delimits them,
-and all keys are upper-cased by convention, as in this example.
+Note that for nested keys, an underscore (`_`) delimits them, and all
+keys are upper-cased by convention, as in this example.
 
 
 ### Watching for Configuration Changes

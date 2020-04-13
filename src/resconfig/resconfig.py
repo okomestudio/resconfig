@@ -47,6 +47,7 @@ class ResConfig(Watchable, IO):
         config_paths: List[FilePath] = None,
         watchers: dict = None,
         schema: dict = None,
+        envvar_prefix: str = "",
         skip_load_on_init: bool = False,
     ):
         self._watchers = Watchers()
@@ -58,6 +59,7 @@ class ResConfig(Watchable, IO):
         self._default = Dict(default or {})
         self._clargs = Dict()
         self._config_paths = config_paths or []
+        self._envvar_prefix = envvar_prefix
         self._conf = Dict()
 
         if not skip_load_on_init:
@@ -102,7 +104,7 @@ class ResConfig(Watchable, IO):
         clargs = self._clargs if from_clargs is None else from_clargs
 
         for key in self._default.allkeys():
-            envkey = ("__".join(key)).upper()
+            envkey = self._envvar_prefix + ("_".join(key)).upper()
             if envkey in env:
                 new[key] = env[envkey]
 

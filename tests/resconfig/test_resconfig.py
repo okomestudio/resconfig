@@ -67,13 +67,14 @@ class TestPrepareConfig(TestCase):
         for key in ("x1", "x4.y3.z2"):
             assert result[key] == from_files[0][key]
 
-    def test_from_env(self):
+    @pytest.mark.parametrize("envvar_prefix", ["", "RC_"])
+    def test_from_env(self, envvar_prefix):
         from_files = [{"x1": 55, "x4.y3.z2": "foo"}]
-        env = {"X1": 55, "X4__Y3__Z2": "bar"}
-        rc = ResConfig(self.default)
+        env = {envvar_prefix + "X1": 55, envvar_prefix + "X4_Y3_Z2": "bar"}
+        rc = ResConfig(self.default, envvar_prefix=envvar_prefix)
         result = rc._prepare_config(from_files=from_files, from_env=env)
-        assert result["x1"] == env["X1"]
-        assert result["x4.y3.z2"] == env["X4__Y3__Z2"]
+        assert result["x1"] == env[envvar_prefix + "X1"]
+        assert result["x4.y3.z2"] == env[envvar_prefix + "X4_Y3_Z2"]
 
 
 class TestIndexAccess(TestCase):
