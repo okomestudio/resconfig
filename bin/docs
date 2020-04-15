@@ -1,0 +1,4 @@
+#!/usr/bin/env bash
+
+(cd docs/ && make html)
+python -m http.server --directory docs/build/html

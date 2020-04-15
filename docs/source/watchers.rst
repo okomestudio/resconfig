@@ -1,0 +1,3 @@
+.. automodule:: resconfig.watchers
+   :members:
+

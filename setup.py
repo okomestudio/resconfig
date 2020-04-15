@@ -69,6 +69,8 @@ setup_requires = []
 
 dev_requires = ["black>=19.10b0", "flake8>=3.7.9", "isort>=4.3.21", "pre-commit>=2.2.0"]
 
+doc_requires = ["sphinx>=3.0.1"]
+
 test_requires = ["coverage>=5.0.4", "pytest>=5.4.1", "pytest-cov>=2.8.1"]
 
 
@@ -107,6 +109,10 @@ setup(
     cmdclass={"test": PyTest, "verify": Verify},
     install_requires=requires,
     tests_require=test_requires,
-    extras_require={"test": test_requires, "dev": dev_requires + test_requires},
+    extras_require={
+        "dev": dev_requires + test_requires,
+        "doc": doc_requires,
+        "test": test_requires,
+    },
     entry_points={"console_scripts": []},
 )
