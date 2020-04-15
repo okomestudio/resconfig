@@ -1,3 +1,8 @@
+"""resconfig.dicttype
+=====================
+
+TBD.
+"""
 from collections import OrderedDict
 from collections.abc import MutableMapping
 from functools import wraps

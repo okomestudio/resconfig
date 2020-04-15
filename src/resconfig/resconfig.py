@@ -1,3 +1,8 @@
+"""resconfig.resconfig
+======================
+
+TBD.
+"""
 import os
 from copy import deepcopy
 from enum import Enum

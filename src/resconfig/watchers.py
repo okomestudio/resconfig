@@ -1,3 +1,8 @@
+"""resconfig.watchers
+=====================
+
+TBD.
+"""
 from functools import wraps
 
 from .actions import Action

@@ -1,3 +1,8 @@
+"""resconfig.actions
+====================
+
+TBD.
+"""
 from enum import Enum
 
 

@@ -1,3 +1,8 @@
+"""resconfig.schema
+===================
+
+TBD.
+"""
 from .dicttype import Dict
 
 
