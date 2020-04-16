@@ -42,7 +42,7 @@ class ResConfig(Watchable, IO):
         config_paths: List of paths to config files.
         watchers: Config watchers.
         schema: Config schema.
-        skip_load_on_init: True to skip config load on initialization.
+        load_on_init: True to load config on instantiation.
 
     """
 
@@ -53,7 +53,7 @@ class ResConfig(Watchable, IO):
         watchers: dict = None,
         schema: dict = None,
         envvar_prefix: str = "",
-        skip_load_on_init: bool = False,
+        load_on_init: bool = True,
     ):
         self._watchers = Watchers()
         for k, v in (watchers or {}).items():
@@ -67,7 +67,7 @@ class ResConfig(Watchable, IO):
         self._envvar_prefix = envvar_prefix
         self._conf = Dict()
 
-        if not skip_load_on_init:
+        if load_on_init:
             self.load()
 
     def read_from_argparse(self, args, config_paths=None, keymap=None):

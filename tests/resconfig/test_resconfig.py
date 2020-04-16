@@ -25,10 +25,10 @@ class TestInit(TestCase):
         conf = ResConfig(watchers={key: watcher})
         assert watcher in conf._watchers.funcs(key)
 
-    def test_skip_load_on_init(self, default_config):
+    def test_load_on_init(self, default_config):
         conf = ResConfig(default_config)
         assert conf._asdict() == default_config
-        conf = ResConfig(default_config, skip_load_on_init=True)
+        conf = ResConfig(default_config, load_on_init=False)
         assert conf._asdict() == {}
 
 
