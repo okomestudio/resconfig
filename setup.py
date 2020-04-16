@@ -53,16 +53,6 @@ class PyTest(TestCommand):
         sys.exit(errno)
 
 
-class Verify(Install):
-    description = "Verify that the tag and version match"
-
-    def run(self):
-        tag = os.getenv("CIRCLE_TAG")
-        if tag != "v" + version:
-            info = "Git tag: {} does not match the version {}".format(tag, version)
-            sys.exit(info)
-
-
 requires = ["PyYAML>=5.3.1", "toml>=0.10.0"]
 
 setup_requires = []
@@ -106,7 +96,7 @@ setup(
     python_requires=">=3.6",
     license=license,
     scripts=[],
-    cmdclass={"test": PyTest, "verify": Verify},
+    cmdclass={"test": PyTest},
     install_requires=requires,
     tests_require=test_requires,
     extras_require={
