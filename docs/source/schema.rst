@@ -1,3 +1,0 @@
-.. automodule:: resconfig.schema
-   :members:
-

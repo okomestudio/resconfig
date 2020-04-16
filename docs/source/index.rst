@@ -3,27 +3,33 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-Welcome to resconfig's documentation!
-=====================================
+resconfig
+=========
+
+A minimalistic application configuration library for Python.
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
 
-             
-resconfig
----------
+User's Guide
+------------
 
 .. toctree::
-   :maxdepth: 3
+   :maxdepth: 2
 
-   actions
-   dicttype
-   io
-   resconfig
-   schema
-   watchers
+   installation
+   quickstart
 
+             
+API Reference
+-------------
+
+.. toctree::
+   :maxdepth: 2
+
+   api
+ 
 
 Indices and tables
 ==================

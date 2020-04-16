@@ -1,3 +1,0 @@
-.. automodule:: resconfig.dicttype
-   :members:
-
