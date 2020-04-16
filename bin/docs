@@ -1,4 +1,98 @@
 #!/usr/bin/env bash
 
-(cd docs/ && make html)
-python -m http.server --directory docs/build/html
+set -e
+
+readonly scriptname="${0##*/}"
+
+function usage() {
+  cat <<USAGE >&2
+Usage: $scriptname [-w SECS]
+
+Compile and serve docs. The script watches directories for changes and
+restart.
+
+  -w  Sleep time in seconds
+
+USAGE
+  exit "${1:-1}"
+}
+
+
+function error() {
+  >&2 echo "$scriptname: $1"
+  >&2 echo "Try '$scriptname -h' for more information."
+  exit "${2:-1}"
+}
+
+
+# The process ID of the doc server
+pid=
+
+
+function kill_server_if_running() {
+  if [ ! -z "$pid" ]; then
+    kill $pid
+  fi
+}
+
+
+function teardown() {
+  kill_server_if_running
+  exit 0
+}
+
+
+function checksum() {
+  find "$@" -type f -exec md5sum {} \;
+}
+
+
+function build_docs() {
+  local srcdir=$1
+  (cd "$srcdir" && make clean && make html)
+}
+
+
+function serve_docs() {
+  local servdir=$1
+  python -m http.server --directory "$servdir" &
+  pid=$!
+}
+
+
+function main() {
+  local wait=${1:-3}
+  declare -a srcdirs=(docs/ src/)
+  local srvdir="docs/build/html"
+  local chsum
+  local chsum_prev
+
+  while true; do
+    chsum=$(checksum "${srcdirs[@]}")
+    if [[ "$chsum" != "$chsum_prev" ]]; then
+      build_docs "docs/"
+      chsum_prev=$(checksum "${srcdirs[@]}")
+      kill_server_if_running
+      serve_docs "$srvdir"
+    fi
+    sleep "$wait"
+  done
+}
+
+
+if [ "$0" = "${BASH_SOURCE[0]}" ]; then
+  while getopts "hw:" opt; do
+    case $opt in
+      h|\?)
+        if [ "$opt" = "h" ]; then usage 0; else usage; fi
+        ;;
+      w)
+        wait=$OPTARG
+        ;;
+    esac
+  done
+  shift $((OPTIND - 1))
+
+  trap teardown SIGINT SIGTERM
+  main "$wait" "$@"
+fi
