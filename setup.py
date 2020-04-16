@@ -6,7 +6,6 @@ import sys
 
 from setuptools import find_packages
 from setuptools import setup
-from setuptools.command.install import install as Install
 from setuptools.command.test import test as TestCommand
 
 here = os.path.abspath(os.path.dirname(__file__))
@@ -61,7 +60,7 @@ dev_requires = ["black>=19.10b0", "flake8>=3.7.9", "isort>=4.3.21", "pre-commit>
 
 doc_requires = ["sphinx>=3.0.1"]
 
-test_requires = ["coverage>=5.0.4", "pytest>=5.4.1", "pytest-cov>=2.8.1"]
+tests_require = ["coverage>=5.0.4", "pytest>=5.4.1", "pytest-cov>=2.8.1"]
 
 
 setup(
@@ -96,13 +95,13 @@ setup(
     python_requires=">=3.6",
     license=license,
     scripts=[],
-    cmdclass={"test": PyTest},
+    cmdclass={"tests": PyTest},
     install_requires=requires,
-    tests_require=test_requires,
+    tests_require=tests_require,
     extras_require={
-        "dev": dev_requires + test_requires,
+        "dev": dev_requires + tests_require,
         "doc": doc_requires,
-        "test": test_requires,
+        "tests": tests_require,
     },
     entry_points={"console_scripts": []},
 )

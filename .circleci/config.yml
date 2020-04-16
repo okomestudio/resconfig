@@ -52,7 +52,7 @@ jobs:
           command: |
             python3 -m venv venv || virtualenv venv
             . venv/bin/activate
-            pip install -e .[test]
+            pip install -e .[tests]
       - save_cache:
           key: v1-dependencies-{{ checksum "setup.py" }}
           paths:
@@ -61,7 +61,7 @@ jobs:
           name: Run tests
           command: |
             . venv/bin/activate
-            python setup.py test
+            python setup.py tests
       - store_artifacts:
           path: test-reports
           destination: test-reports
@@ -85,7 +85,7 @@ jobs:
           command: |
             python3 -m venv venv || virtualenv venv
             . venv/bin/activate
-            pip install -e .[test]
+            pip install -e .[tests]
             pip install coveralls
       - save_cache:
           key: v1-dependencies-{{ checksum "setup.py" }}
@@ -95,7 +95,7 @@ jobs:
           name: Run tests
           command: |
             . venv/bin/activate
-            python setup.py test
+            python setup.py tests
             coveralls
       - store_artifacts:
           path: test-reports
@@ -116,7 +116,7 @@ jobs:
             python3 -m venv venv
             . venv/bin/activate
             pip install -U pip setuptools twine wheel
-            pip install -e .[test]
+            pip install -e .[tests]
       - save_cache:
           key: v1-dependencies-{{ checksum "setup.py" }}
           paths:
