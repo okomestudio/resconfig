@@ -7,6 +7,7 @@ import os
 from copy import deepcopy
 from enum import Enum
 from logging import getLogger
+from pathlib import Path
 
 from .actions import Action
 from .clargs import CLArgs
@@ -40,17 +41,18 @@ class ResConfig(Watchable, IO, CLArgs):
 
     Args:
         default: Default config.
-        config_paths: List of filenames with configurations.
-        watchers: Config watchers.
-        schema: Config schema.
+        config_files: List of filenames with configurations.
+        envvar_prefix: The prefix used for environment variables.
         load_on_init: True to load config on instantiation.
+        schema: Config schema.
+        watchers: Config watchers.
 
     """
 
     def __init__(
         self,
         default: dict = None,
-        config_paths: List[FilePath] = None,
+        config_files: List[FilePath] = None,
         watchers: dict = None,
         schema: dict = None,
         envvar_prefix: str = "",
@@ -64,7 +66,9 @@ class ResConfig(Watchable, IO, CLArgs):
         self._schema = Schema(schema or {})
         self._default = Dict(default or {})
         self._clargs = Dict()
-        self._config_paths = config_paths or []
+        self._config_files = (
+            [Path(p).expanduser() for p in config_files] if config_files else []
+        )
         self._envvar_prefix = envvar_prefix
         self._conf = Dict()
 
@@ -88,8 +92,12 @@ class ResConfig(Watchable, IO, CLArgs):
         """Prepare a Dict to update the configuration with."""
         new = deepcopy(self._default)
 
-        for conf in from_files or []:
-            new.merge(conf)
+        if from_files:
+            for conf in from_files:
+                new.merge(conf)
+        else:
+            if self._config_files:
+                new.merge(self._read_from_files_as_dict(self._config_files))
 
         env = os.environ if from_env is None else from_env
         clargs = self._clargs if from_clargs is None else from_clargs
@@ -110,8 +118,8 @@ class ResConfig(Watchable, IO, CLArgs):
 
     def load(self):
         from_files = (
-            [self._read_from_files_as_dict(self._config_paths)]
-            if self._config_paths
+            [self._read_from_files_as_dict(self._config_files)]
+            if self._config_files
             else None
         )
         self.replace(self._prepare_config(from_files=from_files))

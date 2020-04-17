@@ -1,3 +1,5 @@
+import os
+
 import pytest
 from resconfig.resconfig import ResConfig
 
@@ -14,8 +16,12 @@ class TestInit(TestCase):
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
         conf.save(filename)
-        conf = ResConfig(config_paths=["somenonexistingfile", filename])
+        conf = ResConfig(config_files=["somenonexistingfile", filename])
         assert conf._asdict() == expected
+
+    def test_init_with_files_with_user_expansion(self):
+        conf = ResConfig(config_files=["~/.conf.yml"])
+        assert str(conf._config_files[0]) == os.environ["HOME"] + "/.conf.yml"
 
     def test_init_with_watcher(self):
         def watcher(*args):
