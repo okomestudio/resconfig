@@ -34,23 +34,22 @@ def _suffix_to_filetype(filename: FilePath) -> FileType:
     return filetype
 
 
+def _read_as_dict(filename: FilePath, filetype: Optional[FileTypes] = None) -> ONDict:
+    if filetype is None:
+        filetype = _suffix_to_filetype(filename)
+    load = {
+        FileType.ini: ini.load,
+        FileType.json: json.load,
+        FileType.toml: toml.load,
+        FileType.yaml: yaml.load,
+    }.get(filetype, ini.load)
+    with open(filename) as f:
+        loaded = load(f)
+    return ONDict(loaded)
+
+
 class IO:
     """The mix-in to add file IO functionality."""
-
-    def _read_as_dict(
-        self, filename: FilePath, filetype: Optional[FileTypes] = None
-    ) -> ONDict:
-        if filetype is None:
-            filetype = _suffix_to_filetype(filename)
-        load = {
-            FileType.ini: ini.load,
-            FileType.json: json.load,
-            FileType.toml: toml.load,
-            FileType.yaml: yaml.load,
-        }.get(filetype, ini.load)
-        with open(filename) as f:
-            loaded = load(f)
-        return ONDict(loaded)
 
     def _read_from_files_as_dict(self, paths: List[FilePath]) -> ONDict:
         """Read the config from a file as a ONDict.
@@ -61,7 +60,7 @@ class IO:
         for path in paths:
             path = Path(path)
             if path.is_file():
-                content = self._read_as_dict(path)
+                content = _read_as_dict(path)
                 dic.merge(content)
                 break
         return dic
@@ -80,7 +79,7 @@ class IO:
             self.replace(self._prepare_config(from_files=from_files))
 
     def __update_from_file(self, filename: FilePath, filetype: FileType):
-        self.update(self._read_as_dict(filename, filetype))
+        self.update(_read_as_dict(filename, filetype))
 
     def update_from_file(self, filename: FilePath):
         """Update config from the file.

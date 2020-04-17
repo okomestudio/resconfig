@@ -7,6 +7,7 @@ from unittest import mock
 import pytest
 from resconfig import ResConfig
 from resconfig.io.io import FileType
+from resconfig.io.io import _read_as_dict
 from resconfig.io.io import _suffix_to_filetype
 
 from .test_resconfig import TestCase
@@ -28,6 +29,16 @@ class TestSuffixToFiletype:
         assert _suffix_to_filetype(name) == filetype
 
 
+class TestReadAsDict:
+    def test(self, filename):
+        expected = {"a": {"b": "1"}}
+        conf = ResConfig(expected)
+        conf.save_to_file(filename)
+        content = _read_as_dict(filename)
+        assert isinstance(content, dict)
+        assert content == expected
+
+
 class TestIO(TestCase):
     @contextmanager
     def tempfile(self, suffix=""):
@@ -37,14 +48,6 @@ class TestIO(TestCase):
             yield filename
         finally:
             os.remove(filename)
-
-    def test_read_as_dict(self, filename):
-        expected = {"a": {"b": "1"}}
-        conf = ResConfig(expected)
-        conf.save_to_file(filename)
-        content = conf._read_as_dict(filename)
-        assert isinstance(content, dict)
-        assert content == expected
 
     def test_with_suffix(self, filename):
         conf = ResConfig()
