@@ -9,6 +9,7 @@ from enum import Enum
 from logging import getLogger
 
 from .actions import Action
+from .clargs import CLArgs
 from .dicttype import Dict
 from .dicttype import flexdictargs
 from .dicttype import isdict
@@ -34,12 +35,12 @@ class Sentinel(Enum):
     """Sentinel value indicating the config key to be removed."""
 
 
-class ResConfig(Watchable, IO):
+class ResConfig(Watchable, IO, CLArgs):
     """Application resource configuration.
 
     Args:
         default: Default config.
-        config_paths: List of paths to config files.
+        config_paths: List of filenames with configurations.
         watchers: Config watchers.
         schema: Config schema.
         load_on_init: True to load config on instantiation.
@@ -69,21 +70,6 @@ class ResConfig(Watchable, IO):
 
         if load_on_init:
             self.load()
-
-    def read_from_argparse(self, args, config_paths=None, keymap=None):
-        keymap = keymap or {}
-        conf = Dict()
-        if config_paths:
-            conf.merge(self._read_from_files_as_dict(config_paths))
-
-        for k, v in vars(args).items():
-            if k in keymap:
-                k = keymap[k]
-            else:
-                k = ".".join(k.split("_"))
-            conf.update({k: v})
-
-        self._clargs = conf
 
     def __contains__(self, key):
         return key in self._conf
