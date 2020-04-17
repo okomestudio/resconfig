@@ -20,8 +20,9 @@ User's Guide
 
    installation
    quickstart
+   watch_functions
 
-             
+
 API Reference
 -------------
 
@@ -29,7 +30,7 @@ API Reference
    :maxdepth: 2
 
    api
- 
+
 
 Indices and tables
 ==================
