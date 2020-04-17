@@ -30,7 +30,7 @@ version = meta("version")
 author = meta("author")
 author_email = meta("author_email")
 license = meta("license")
-readme = fread("README.md")
+readme = fread("README.rst")
 
 
 class PyTest(TestCommand):
@@ -68,7 +68,7 @@ setup(
     version=version,
     description="A minimalistic application configuration library for Python",
     long_description=readme,
-    long_description_content_type="text/markdown",
+    long_description_content_type="text/x-rst",
     author=author,
     author_email=author_email,
     url="https://github.com/okomestudio/resconfig",
