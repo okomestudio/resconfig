@@ -41,7 +41,7 @@ class TestIO(TestCase):
     def test_read_as_dict(self, filename):
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
-        conf.save(filename)
+        conf.save_to_file(filename)
         content = conf._read_as_dict(filename)
         assert isinstance(content, dict)
         assert content == expected
@@ -49,7 +49,7 @@ class TestIO(TestCase):
     def test_with_suffix(self, filename):
         conf = ResConfig()
         with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
-            conf.save(filename)
+            conf.save_to_file(filename)
         func.assert_called_with(filename)
         with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
             conf.load_from_file(filename)

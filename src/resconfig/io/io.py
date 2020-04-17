@@ -123,10 +123,11 @@ class IO:
         with open(filename, "w") as f:
             dump(d, f)
 
-    def save(self, filename: FilePath):
+    def save_to_file(self, filename: FilePath):
         """Save config to the file.
 
-        The file type is inferred from the filename extension."""
+        The file type is inferred from the filename extension.
+        """
         self.__save(filename, _suffix_to_filetype(filename))
 
     def save_to_ini(self, filename: FilePath):

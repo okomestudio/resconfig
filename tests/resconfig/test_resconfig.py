@@ -15,7 +15,7 @@ class TestInit(TestCase):
     def test_init_with_files(self, filename):
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
-        conf.save(filename)
+        conf.save_to_file(filename)
         conf = ResConfig(config_files=["somenonexistingfile", filename])
         assert conf._asdict() == expected
 
