@@ -83,6 +83,10 @@ class ResConfig(Watchable, IO, CLArgs):
             raise KeyError(key)
         return self.get(key)
 
+    def _asdict(self) -> dict:
+        """Return the config as a dict object."""
+        return dict(deepcopy(self._conf))
+
     def _prepare_config(
         self,
         from_files: Optional[List[Dict]] = None,
@@ -112,21 +116,13 @@ class ResConfig(Watchable, IO, CLArgs):
 
         return new
 
-    def _asdict(self) -> dict:
-        """Return the configuration as a dict object."""
-        return dict(deepcopy(self._conf))
-
     def load(self):
-        from_files = (
-            [self._read_from_files_as_dict(self._config_files)]
-            if self._config_files
-            else None
-        )
-        self.replace(self._prepare_config(from_files=from_files))
+        """Load the prepared config."""
+        self.replace(self._prepare_config())
 
     def reset(self):
         """Reset config to default."""
-        self.replace(self._prepare_config())
+        self.replace(deepcopy(self._default))
 
     def get(self, key: Key, default: Optional[Any] = Sentinel.MISSING) -> Any:
         """Get the config item at the key."""
@@ -223,12 +219,12 @@ class ResConfig(Watchable, IO, CLArgs):
 
     @flexdictargs
     def update(self, conf: dict):
-        """Update the current config with the new one."""
+        """Update config with the given config."""
         k = "__ROOT__"  # Insert a layer for the first iteration
         self.__update((k,), {k: self._conf}, {k: conf})
 
     @flexdictargs
     def replace(self, conf: dict):
-        """Replace the current config with the new one."""
+        """Replace config with the given config."""
         k = "__ROOT__"  # Insert a layer for the first iteration
         self.__update((k,), {k: self._conf}, {k: conf}, replace=True)

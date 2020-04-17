@@ -1,3 +1,10 @@
+"""resconfig Configuration Library
+==================================
+
+:copyright: (c) 2020 by Taro Sato.
+:license: Apache 2.0, see LICENSE.txt for more details.
+"""
+
 from .actions import Action  # noqa
 from .resconfig import ResConfig  # noqa
 

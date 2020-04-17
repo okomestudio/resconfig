@@ -2,11 +2,13 @@ from pathlib import Path
 from typing import Any  # noqa
 from typing import Callable  # noqa
 from typing import Generator  # noqa
+from typing import Iterable  # noqa
 from typing import List  # noqa
 from typing import NewType  # noqa
 from typing import Optional  # noqa
 from typing import Text  # noqa
 from typing import Tuple  # noqa
+from typing import TypeVar  # noqa
 from typing import Union  # noqa
 
 from .actions import Action
@@ -19,3 +21,5 @@ takes in Action value, old, and new values.
 """
 
 FilePath = Union[str, Path]
+
+RT = TypeVar("RT")

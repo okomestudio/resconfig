@@ -236,7 +236,7 @@ Running Tests
 
 .. code-block:: sh
 
-    $ python setup.py test
+    $ python setup.py tests
 
 
 License
