@@ -52,7 +52,7 @@ class TestIO(TestCase):
             conf.save_to_file(filename)
         func.assert_called_with(filename)
         with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
-            conf.load_from_file(filename)
+            conf.update_from_file(filename)
         func.assert_called_with(filename)
 
 
@@ -72,7 +72,7 @@ class TestINI(TestIO):
         assert "[sec1]" in content
 
         conf = ResConfig()
-        conf.load_from_ini(filename)
+        conf.update_from_ini(filename)
         assert "sec1.opt1" in conf
         assert conf.get("sec1.opt1") == self.ini_default["sec1"]["opt1"]
 
@@ -98,7 +98,7 @@ class TestJSON(TestIO):
         assert '{"x1": 1' in content
 
         conf = ResConfig()
-        conf.load_from_json(filename)
+        conf.update_from_json(filename)
         assert "x3.y1" in conf
         assert conf.get("x3.y1") == self.default["x3"]["y1"]
 
@@ -119,7 +119,7 @@ class TestTOML(TestIO):
         assert "[x3.y3]\nz1 = 3" in content
 
         conf = ResConfig()
-        conf.load_from_toml(filename)
+        conf.update_from_toml(filename)
         assert "x3.y1" in conf
         assert conf.get("x3.y1") == self.default["x3"]["y1"]
 
@@ -139,6 +139,6 @@ class TestYAML(TestIO):
         assert "x1: 1" in content
 
         conf = ResConfig()
-        conf.load_from_yaml(filename)
+        conf.update_from_yaml(filename)
         assert "x3.y1" in conf
         assert conf.get("x3.y1") == self.default["x3"]["y1"]

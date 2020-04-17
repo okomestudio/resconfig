@@ -1,9 +1,3 @@
-"""resconfig.io.io
-==================
-
-TBD.
-
-"""
 from copy import deepcopy
 from enum import Enum
 from pathlib import Path
@@ -29,7 +23,7 @@ class FileType(Enum):
 FileTypes = NewType("FileTypes", FileType)
 
 
-def _suffix_to_filetype(filename: FilePath):
+def _suffix_to_filetype(filename: FilePath) -> FileType:
     filetype = {
         ".ini": FileType.ini,
         ".json": FileType.json,
@@ -41,6 +35,8 @@ def _suffix_to_filetype(filename: FilePath):
 
 
 class IO:
+    """The mix-in to add file IO functionality."""
+
     def _read_as_dict(
         self, filename: FilePath, filetype: Optional[FileTypes] = None
     ) -> ONDict:
@@ -70,16 +66,6 @@ class IO:
                 break
         return dic
 
-    def __load_from_file(self, filename: FilePath, filetype=None):
-        from_files = [self._read_as_dict(filename, filetype)]
-        self.replace(self._prepare_config(from_files=from_files))
-
-    def load_from_file(self, filename: FilePath):
-        """Load config from the file.
-
-        The file type is inferred from the filename extension."""
-        self.__load_from_file(filename, _suffix_to_filetype(filename))
-
     def load_from_config_paths(self, paths: List[FilePath] = None):
         """Load config from the first existing file from the list.
 
@@ -93,21 +79,31 @@ class IO:
         if from_files:
             self.replace(self._prepare_config(from_files=from_files))
 
-    def load_from_ini(self, filename: FilePath):
-        """Load config from the INI file."""
-        self.__load_from_file(filename, FileType.ini)
+    def __update_from_file(self, filename: FilePath, filetype: FileType):
+        self.update(self._read_as_dict(filename, filetype))
 
-    def load_from_json(self, filename: FilePath):
-        """Load config from the JSON file."""
-        self.__load_from_file(filename, FileType.json)
+    def update_from_file(self, filename: FilePath):
+        """Update config from the file.
 
-    def load_from_toml(self, filename: FilePath):
-        """Load config from the TOML file."""
-        self.__load_from_file(filename, FileType.toml)
+        The file type is inferred from the filename extension.
+        """
+        self.__update_from_file(filename, _suffix_to_filetype(filename))
 
-    def load_from_yaml(self, filename: FilePath):
-        """Load config from the YAML file."""
-        self.__load_from_file(filename, FileType.yaml)
+    def update_from_ini(self, filename: FilePath):
+        """Update config from the INI file."""
+        self.__update_from_file(filename, FileType.ini)
+
+    def update_from_json(self, filename: FilePath):
+        """Update config from the JSON file."""
+        self.__update_from_file(filename, FileType.json)
+
+    def update_from_toml(self, filename: FilePath):
+        """Update config from the TOML file."""
+        self.__update_from_file(filename, FileType.toml)
+
+    def update_from_yaml(self, filename: FilePath):
+        """Update config from the YAML file."""
+        self.__update_from_file(filename, FileType.yaml)
 
     def __save(self, filename: FilePath, filetype: Optional[FileType] = None):
         dump = {
