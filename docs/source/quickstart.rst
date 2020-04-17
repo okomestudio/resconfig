@@ -41,13 +41,24 @@ above:
 Use with Configuration Files
 ----------------------------
 
-TBD.
+By supplying file paths, :class:`~resconfig.ResConfig` will read the
+configuration from the first existing file:
 
 .. code-block:: python
 
-    config = ResConfig()              # create empty config
-    config.load_from_yaml("pg.yaml")  # load config from YAML file
-    dbname = config.get("pg.dbname")  # get value at config["pg"]["dbname"]
+    config = ResConfig(config_files=["myconf.yml",
+                                     "~/.myconf.yml,
+                                     "/etc/myconf.yml"])
+
+The file format is inferred from the
+extension. :class:`~resconfig.ResConfig` currently understands INI
+(`.ini`), JSON (`.json`), TOML (`.toml`), and YAML (`.yaml` or
+`.yml`). The filename with no extension is assumed to be of INI.
+
+The current plan is to allow merge from multiple configuration files
+with precedence, so that one configuration with higher specificity can
+override another with lower specificity. This has not been implemented
+yet.
 
 
 Use with Environment Variables
