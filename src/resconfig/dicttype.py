@@ -7,8 +7,11 @@ from collections import OrderedDict
 from collections.abc import MutableMapping
 from functools import wraps
 
+from .typing import RT
 from .typing import Any
+from .typing import Callable
 from .typing import Generator
+from .typing import Iterable
 from .typing import Key
 from .typing import Tuple
 
@@ -92,7 +95,7 @@ class Dict(OrderedDict):
     def fromkeys(cls, iterable, value=None):
         dic = cls()
         for key in iterable:
-            dic = merge(dic, expand({key: value}))
+            dic = merge(dic, normalize({key: value}))
         return dic
 
     # custom utility methods
@@ -119,13 +122,13 @@ def _expand_args(args, kwargs):
     if args:
         arg = args[0]
         if hasattr(arg, "keys"):
-            new = expand(arg)
+            new = normalize(arg)
         else:
             new = Dict()
             for key, val in arg:
-                new = merge(new, expand({key: val}))
+                new = merge(new, normalize({key: val}))
         args = [new] + list(args[1:])
-    return args, expand(kwargs)
+    return args, normalize(kwargs)
 
 
 def _key_error(obj, key):
@@ -199,17 +202,28 @@ def merge(a: dict, b: dict) -> dict:
     return __merge(a, b)
 
 
-def expand(d: dict) -> dict:
-    if not isdict(d):
+def normalize(d: dict) -> dict:
+    """Normalize the :class:`dict` by expanding nested keys.
+
+    This function returns a new :class:`dict` object by expanding the nested keys and
+    their values into nested :class:`dict` objects.
+
+    Raises:
+        TypeError: When an attempt is made to convert a non-:class:`dict` node to a
+            :class:`dict` node.
+    """
+    if not isinstance(d, MutableMapping):
         return d
     new = d.__class__()
     for key, value in d.items():
         keys = list(normkey(key))
         if len(keys) == 1:
             k = keys[0]
-            expanded = expand(value)
+            expanded = normalize(value)
             new[k] = (
-                merge(new[k], expanded) if k in new and isdict(new[k]) else expanded
+                merge(new[k], expanded)
+                if k in new and isinstance(new[k], MutableMapping)
+                else expanded
             )
         else:
             ref = new
@@ -217,30 +231,38 @@ def expand(d: dict) -> dict:
                 if k not in ref:
                     ref[k] = d.__class__()
                 ref = ref[k]
-                if not isdict(ref):
+                if not isinstance(ref, MutableMapping):
                     k = ".".join(keys[: idx + 1])
                     raise TypeError(
                         f"cannot convert a node from non-dict to dict at '{k}'"
                     )
             k = keys[-1]
-            expanded = expand(value)
+            expanded = normalize(value)
             ref[k] = (
-                merge(ref[k], expanded) if k in ref and isdict(ref[k]) else expanded
+                merge(ref[k], expanded)
+                if k in ref and isinstance(ref[k], MutableMapping)
+                else expanded
             )
     return new
 
 
-def flexdictargs(func):
+def flexdictargs(func: Callable[[dict], RT]) -> Callable[[Iterable, Any], RT]:
+    """Decorate a method to add dict.update()-like interface.
+
+    The decorated method should take one :class:`dict` object as an argument. Then the
+    decorator makes it possible to accept an iterable or :class:`dict` as keyword
+    arguments. The output :class:`dict`
+    """
+
     @wraps(func)
     def f(self, *args, **kwargs):
-        if args and isdict(args[0]):
-            dic = args[0]
+        if args and isinstance(args[0], MutableMapping):
+            d = args[0]
         elif kwargs:
-            dic = kwargs
+            d = kwargs
         else:
             raise TypeError("invalid input arguments")
-        dic = expand(dic)
-        return func(self, dic)
+        return func(self, normalize(d))
 
     return f
 

@@ -2,8 +2,8 @@ from copy import deepcopy
 
 import pytest
 from resconfig.dicttype import Dict
-from resconfig.dicttype import expand
 from resconfig.dicttype import merge
+from resconfig.dicttype import normalize
 from resconfig.dicttype import normkey
 
 
@@ -212,7 +212,7 @@ class TestMerge:
         assert id(result) == objid
 
 
-class TestExpand:
+class TestNormalize:
     @pytest.mark.parametrize(
         "trial, expected",
         [
@@ -227,12 +227,12 @@ class TestExpand:
         ],
     )
     def test(self, trial, expected):
-        assert expand(trial) == expected
+        assert normalize(trial) == expected
 
     @pytest.mark.parametrize("trial", [{"a": 1, "a.b": 2}, {"a.b": 1, "a.b.c": 2}])
     def test_inconsistent(self, trial):
         with pytest.raises(TypeError) as exc:
-            print(expand(trial))
+            print(normalize(trial))
         assert "cannot convert" in str(exc)
 
 
