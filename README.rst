@@ -1,14 +1,4 @@
-.. image:: https://img.shields.io/pypi/pyversions/resconfig.svg
-   :target: https://img.shields.io/pypi/pyversions/resconfig.svg
-
-.. image:: https://circleci.com/gh/okomestudio/resconfig.svg?style=shield
-   :target: https://circleci.com/gh/okomestudio/resconfig
-
-.. image:: https://coveralls.io/repos/github/okomestudio/resconfig/badge.svg?branch=development&kill_cache=1
-   :target: https://coveralls.io/github/okomestudio/resconfig?branch=development
-
-.. image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/psf/black
+|license| |versions| |pypi-version| |status| |ci-status| |coverage| |black|
 
 
 *********
@@ -251,3 +241,32 @@ License
 `Apache License, Version 2.0`_
 
 .. _Apache License, Version 2.0: https://raw.githubusercontent.com/okomestudio/resconfig/development/LICENSE.txt
+
+
+.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
+   :target: https://github.com/psf/black
+   :alt: Black
+
+.. |ci-status| image:: https://circleci.com/gh/okomestudio/resconfig.svg?style=shield
+   :target: https://circleci.com/gh/okomestudio/resconfig
+   :alt: CI Status
+
+.. |coverage| image:: https://coveralls.io/repos/github/okomestudio/resconfig/badge.svg?branch=development&kill_cache=1
+   :target: https://coveralls.io/github/okomestudio/resconfig?branch=development
+   :alt: Coverage
+
+.. |license| image:: https://img.shields.io/pypi/l/resconfig.svg
+   :target: https://pypi.org/project/resconfig/
+   :alt: License
+
+.. |pypi-version| image:: https://badge.fury.io/py/resconfig.svg
+    :target: https://pypi.org/project/resconfig/
+    :alt: PyPI Version
+
+.. |status| image:: https://img.shields.io/pypi/status/resconfig.svg
+    :target: https://pypi.org/project/resconfig/
+    :alt: Package Status
+
+.. |versions| image:: https://img.shields.io/pypi/pyversions/resconfig.svg
+   :target: https://img.shields.io/pypi/pyversions/resconfig.svg
+   :alt: Versions
