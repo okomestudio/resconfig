@@ -21,6 +21,19 @@ exclude = '''
 )/
 '''
 
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "def __str__",
+    "if __name__ == .__main__.:",
+    "log(|ging).(debug|info|warning)",
+    "raise AssertionError",
+    "raise NotImplementedError",
+]
+
+
 [tool.isort]
 line_length = 88
 force_single_line = true
