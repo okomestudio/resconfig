@@ -15,6 +15,9 @@ objects and can:
 - Read from environment variables: Configuration can be easily
   overridden with environment variables.
 
+- Read from command-line arguments: Configuration can be easily
+  overridden with ``ArgumentParser`` command-line arguments.
+
 - Dynamically reload configuration at run time: Watch functions can be
   attached to any keys within the configuration, so that separate
   resources can be reloaded and managed.
@@ -28,10 +31,11 @@ objects and can:
 - Apply schema (experimental): Type casting can be performed upon
   loading configuration from files.
 
+For the full documentation, visit `documentation`_.
+
 
 Installation
 ============
-
 
 .. code-block:: sh
 
@@ -241,6 +245,8 @@ License
 `Apache License, Version 2.0`_
 
 .. _Apache License, Version 2.0: https://raw.githubusercontent.com/okomestudio/resconfig/development/LICENSE.txt
+
+.. _documentation: https://resconfig.readthedocs.io/
 
 
 .. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
