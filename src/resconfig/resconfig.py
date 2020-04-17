@@ -1,8 +1,3 @@
-"""resconfig.resconfig
-======================
-
-TBD.
-"""
 import os
 from copy import deepcopy
 from enum import Enum
@@ -12,6 +7,7 @@ from pathlib import Path
 from .actions import Action
 from .clargs import CLArgs
 from .io import IO
+from .io.io import read_from_files_as_dict
 from .ondict import ONDict
 from .ondict import flexdictargs
 from .ondict import isdict
@@ -44,6 +40,7 @@ class ResConfig(Watchable, IO, CLArgs):
         config_files: List of filenames with configurations.
         envvar_prefix: The prefix used for environment variables.
         load_on_init: True to load config on instantiation.
+        merge_config_files:
         schema: Config schema.
         watchers: Config watchers.
 
@@ -53,10 +50,11 @@ class ResConfig(Watchable, IO, CLArgs):
         self,
         default: dict = None,
         config_files: List[FilePath] = None,
-        watchers: dict = None,
-        schema: dict = None,
         envvar_prefix: str = "",
         load_on_init: bool = True,
+        merge_config_files: bool = False,
+        schema: dict = None,
+        watchers: dict = None,
     ):
         self._watchers = Watchers()
         for k, v in (watchers or {}).items():
@@ -69,6 +67,7 @@ class ResConfig(Watchable, IO, CLArgs):
         self._config_files = (
             [Path(p).expanduser() for p in config_files] if config_files else []
         )
+        self._merge_config_files = merge_config_files
         self._envvar_prefix = envvar_prefix
         self._conf = ONDict()
 
@@ -101,7 +100,11 @@ class ResConfig(Watchable, IO, CLArgs):
                 new.merge(conf)
         else:
             if self._config_files:
-                new.merge(self._read_from_files_as_dict(self._config_files))
+                new.merge(
+                    read_from_files_as_dict(
+                        self._config_files, self._merge_config_files
+                    )
+                )
 
         env = os.environ if from_env is None else from_env
         clargs = self._clargs if from_clargs is None else from_clargs

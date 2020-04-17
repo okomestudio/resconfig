@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 from argparse import Namespace
 
+from .io.io import read_from_files_as_dict
 from .ondict import ONDict
 
 
@@ -43,7 +44,7 @@ class CLArgs:
         keymap = keymap or {}
         conf = ONDict()
         if config_paths:
-            conf.merge(self._read_from_files_as_dict(config_paths))
+            conf.merge(read_from_files_as_dict(config_paths, self._merge_config_files))
 
         for k, v in vars(args).items():
             if k in keymap:

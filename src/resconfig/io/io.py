@@ -48,35 +48,58 @@ def _read_as_dict(filename: FilePath, filetype: Optional[FileTypes] = None) -> O
     return ONDict(loaded)
 
 
+def ensure_path(path: FilePath) -> Path:
+    return path if isinstance(path, Path) else Path(path).expanduser()
+
+
+def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDict:
+    """Read the config from a file(s) as an :class:`ONDict`.
+
+    How the config is constructed depends on the ``merge`` flag. If :obj:`True`, the
+    files are searched in the reverse order, and the config is read from each existing
+    file and merged in that order. If :obj:`False`, then the files are searched for in
+    the order given in ``paths``, and the first existing file provides the config to be
+    read (and the rest are ignored).
+
+    Args:
+        paths: A list of config file paths.
+        merge: The flag for the merge mode; see the function description.
+
+    Returns:
+        An :class:`~resconfig.ondict.ONDict` object.
+    """
+    d = ONDict()
+    paths = reversed(paths) if merge else paths
+    for path in paths:
+        path = ensure_path(path)
+        if path.is_file():
+            content = _read_as_dict(path)
+            d.merge(content)
+            if not merge:
+                break
+    return d
+
+
 class IO:
     """The mix-in to add file IO functionality."""
 
-    def _read_from_files_as_dict(self, paths: List[FilePath]) -> ONDict:
-        """Read the config from a file as a ONDict.
+    def update_from_files(self, paths: List[FilePath], merge=False):
+        """Update config from files.
 
-        This method searches for the first existing file from the list.
+        How the config is constructed depends on the ``merge`` flag. If :obj:`True`, the
+        files are searched in the reverse order, and the config is read from each
+        existing file and merged in that order. If :obj:`False`, then the files are
+        searched for in the order given in ``paths``, and the first existing file
+        provides the config to be read (and the rest are ignored).
+
+        Args:
+            paths: A list of config file paths.
+            merge: The flag for the merge mode; see the function description.
+
+        Returns:
+            An :class:`~resconfig.ondict.ONDict` object.
         """
-        dic = ONDict()
-        for path in paths:
-            path = Path(path)
-            if path.is_file():
-                content = _read_as_dict(path)
-                dic.merge(content)
-                break
-        return dic
-
-    def load_from_config_paths(self, paths: List[FilePath] = None):
-        """Load config from the first existing file from the list.
-
-        If the paths are not given, then it is loaded from the default config paths
-        provided at the time of ResConfig instantiation, if any.
-        """
-        config_paths = paths or self._config_paths
-        from_files = (
-            [self._read_from_files_as_dict(config_paths)] if config_paths else None
-        )
-        if from_files:
-            self.replace(self._prepare_config(from_files=from_files))
+        self.update(read_from_files_as_dict(paths, merge))
 
     def __update_from_file(self, filename: FilePath, filetype: FileType):
         self.update(_read_as_dict(filename, filetype))
