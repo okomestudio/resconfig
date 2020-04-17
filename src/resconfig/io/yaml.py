@@ -1,6 +1,6 @@
 import yaml
 
-from ..dicttype import Dict
+from ..ondict import ONDict
 
 
 class _Dumper(yaml.Dumper):
@@ -13,7 +13,7 @@ def _dict_representer(dumper, data):
     )
 
 
-_Dumper.add_representer(Dict, _dict_representer)
+_Dumper.add_representer(ONDict, _dict_representer)
 
 
 def dump(data, stream, **kwargs):

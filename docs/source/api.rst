@@ -13,10 +13,10 @@ ResConfig Object
    :show-inheritance:
 
 
-Dict Object
------------
+ONDict Object
+-------------
 
-.. autoclass:: resconfig.dicttype.Dict
+.. autoclass:: resconfig.ondict.ONDict
    :members:
    :inherited-members:
    :show-inheritance:
@@ -28,4 +28,3 @@ Actions
 .. autoclass:: resconfig.actions.Action
    :members:
    :inherited-members:
-            

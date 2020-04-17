@@ -1,18 +1,18 @@
 from copy import deepcopy
 
 import pytest
-from resconfig.dicttype import Dict
-from resconfig.dicttype import merge
-from resconfig.dicttype import normalize
-from resconfig.dicttype import normkey
+from resconfig.ondict import ONDict
+from resconfig.ondict import merge
+from resconfig.ondict import normalize
+from resconfig.ondict import normkey
 
 
-class TestDict:
+class TestONDict:
     default = {"foo": {"bar": {"baz": 0}, "qux": "quux"}}
 
     @pytest.fixture
     def d(self):
-        yield Dict(deepcopy(self.default))
+        yield ONDict(deepcopy(self.default))
 
     @pytest.mark.parametrize(
         "key, expected",

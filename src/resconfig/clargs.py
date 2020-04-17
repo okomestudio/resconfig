@@ -1,7 +1,7 @@
 from argparse import ArgumentParser
 from argparse import Namespace
 
-from .dicttype import Dict
+from .ondict import ONDict
 
 
 class CLArgs:
@@ -41,7 +41,7 @@ class CLArgs:
             keymap: The key mapping from the parsed argument name to the config key.
         """
         keymap = keymap or {}
-        conf = Dict()
+        conf = ONDict()
         if config_paths:
             conf.merge(self._read_from_files_as_dict(config_paths))
 

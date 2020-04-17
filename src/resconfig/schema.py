@@ -3,10 +3,10 @@
 
 TBD.
 """
-from .dicttype import Dict
+from .ondict import ONDict
 
 
-class Schema(Dict):
+class Schema(ONDict):
     def _cast(self, cls, value):
         if callable(cls):
             try:

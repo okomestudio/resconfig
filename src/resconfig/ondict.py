@@ -1,5 +1,5 @@
-"""resconfig.dicttype
-=====================
+"""resconfig.ondict
+===================
 
 TBD.
 """
@@ -18,7 +18,7 @@ from .typing import Tuple
 _default = object()
 
 
-class Dict(OrderedDict):
+class ONDict(OrderedDict):
     _create = None
 
     def __init__(self, *args, **kwargs):
@@ -124,7 +124,7 @@ def _expand_args(args, kwargs):
         if hasattr(arg, "keys"):
             new = normalize(arg)
         else:
-            new = Dict()
+            new = ONDict()
             for key, val in arg:
                 new = merge(new, normalize({key: val}))
         args = [new] + list(args[1:])

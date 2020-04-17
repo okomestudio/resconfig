@@ -11,11 +11,11 @@ from pathlib import Path
 
 from .actions import Action
 from .clargs import CLArgs
-from .dicttype import Dict
-from .dicttype import flexdictargs
-from .dicttype import isdict
-from .dicttype import merge
 from .io import IO
+from .ondict import ONDict
+from .ondict import flexdictargs
+from .ondict import isdict
+from .ondict import merge
 from .schema import Schema
 from .typing import Any
 from .typing import FilePath
@@ -64,13 +64,13 @@ class ResConfig(Watchable, IO, CLArgs):
                 self.register(k, v)
 
         self._schema = Schema(schema or {})
-        self._default = Dict(default or {})
-        self._clargs = Dict()
+        self._default = ONDict(default or {})
+        self._clargs = ONDict()
         self._config_files = (
             [Path(p).expanduser() for p in config_files] if config_files else []
         )
         self._envvar_prefix = envvar_prefix
-        self._conf = Dict()
+        self._conf = ONDict()
 
         if load_on_init:
             self.load()
@@ -89,11 +89,11 @@ class ResConfig(Watchable, IO, CLArgs):
 
     def _prepare_config(
         self,
-        from_files: Optional[List[Dict]] = None,
+        from_files: Optional[List[ONDict]] = None,
         from_env: Optional[os._Environ] = None,
         from_clargs=None,
     ):
-        """Prepare a Dict to update the configuration with."""
+        """Prepare a ONDict to update the configuration with."""
         new = deepcopy(self._default)
 
         if from_files:
@@ -158,13 +158,13 @@ class ResConfig(Watchable, IO, CLArgs):
             return action, oldval, newval
 
         oldval_at_dict_node = deepcopy(conf[_key]) if _key in conf else Sentinel.MISSING
-        newval_at_dict_node = Dict()
+        newval_at_dict_node = ONDict()
 
-        conf.setdefault(_key, Dict())
+        conf.setdefault(_key, ONDict())
 
         for subkey in newconf[_key].keys():
             if not isdict(conf[_key]):
-                conf[_key] = Dict()
+                conf[_key] = ONDict()
 
             action, oldval, newval = self.__update(
                 key + (subkey,), conf[_key], newconf[_key], replace=replace
@@ -175,7 +175,7 @@ class ResConfig(Watchable, IO, CLArgs):
                 if isdict(newval):
                     newval = merge(conf[_key][subkey], newval)
                     newval_at_dict_node[subkey] = merge(
-                        newval_at_dict_node.setdefault(subkey, Dict()), newval
+                        newval_at_dict_node.setdefault(subkey, ONDict()), newval
                     )
                 else:
                     newval_at_dict_node[subkey] = newval

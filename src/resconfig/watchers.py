@@ -6,8 +6,8 @@ TBD.
 from functools import wraps
 
 from .actions import Action
-from .dicttype import Dict
-from .dicttype import isdict
+from .ondict import ONDict
+from .ondict import isdict
 from .typing import Any
 from .typing import Key
 from .typing import List
@@ -15,7 +15,7 @@ from .typing import Optional
 from .typing import WatchFunction
 
 
-class Watchers(Dict):
+class Watchers(ONDict):
     _create = True
     __watcher_key = "__watchers__"
 

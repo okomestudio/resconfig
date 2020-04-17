@@ -1,13 +1,9 @@
-from copy import deepcopy
 from unittest import mock
 
 import pytest
 from resconfig import ResConfig
 from resconfig.actions import Action
-from resconfig.dicttype import Dict
-from resconfig.dicttype import get
-from resconfig.dicttype import isdict
-from resconfig.dicttype import merge
+from resconfig.ondict import get
 from resconfig.resconfig import Sentinel
 
 from .test_resconfig import TestCase

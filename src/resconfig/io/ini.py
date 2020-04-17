@@ -1,14 +1,14 @@
 from configparser import ConfigParser
 
-from ..dicttype import Dict
+from ..ondict import ONDict
 
 
 def load(f):
     parser = ConfigParser()
     parser.read_file(f)
-    dic = Dict()
+    dic = ONDict()
     for section in parser.sections():
-        ref = dic.setdefault(section, Dict())
+        ref = dic.setdefault(section, ONDict())
         for option in parser[section]:
             ref[option] = parser[section][option]
     return dic

@@ -8,7 +8,7 @@ from copy import deepcopy
 from enum import Enum
 from pathlib import Path
 
-from ..dicttype import Dict
+from ..ondict import ONDict
 from ..typing import FilePath
 from ..typing import List
 from ..typing import NewType
@@ -43,7 +43,7 @@ def _suffix_to_filetype(filename: FilePath):
 class IO:
     def _read_as_dict(
         self, filename: FilePath, filetype: Optional[FileTypes] = None
-    ) -> Dict:
+    ) -> ONDict:
         if filetype is None:
             filetype = _suffix_to_filetype(filename)
         load = {
@@ -54,14 +54,14 @@ class IO:
         }.get(filetype, ini.load)
         with open(filename) as f:
             loaded = load(f)
-        return Dict(loaded)
+        return ONDict(loaded)
 
-    def _read_from_files_as_dict(self, paths: List[FilePath]) -> Dict:
-        """Read the config from a file as a Dict.
+    def _read_from_files_as_dict(self, paths: List[FilePath]) -> ONDict:
+        """Read the config from a file as a ONDict.
 
         This method searches for the first existing file from the list.
         """
-        dic = Dict()
+        dic = ONDict()
         for path in paths:
             path = Path(path)
             if path.is_file():
