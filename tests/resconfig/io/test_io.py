@@ -10,7 +10,7 @@ from resconfig.io.io import FileType
 from resconfig.io.io import _read_as_dict
 from resconfig.io.io import _suffix_to_filetype
 
-from .test_resconfig import TestCase
+from ..test_resconfig import TestCase
 
 
 class TestSuffixToFiletype:

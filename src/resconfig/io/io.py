@@ -11,6 +11,7 @@ from . import ini
 from . import json
 from . import toml
 from . import yaml
+from .utils import ensure_path
 
 
 class FileType(Enum):
@@ -48,16 +49,12 @@ def _read_as_dict(filename: FilePath, filetype: Optional[FileTypes] = None) -> O
     return ONDict(loaded)
 
 
-def ensure_path(path: FilePath) -> Path:
-    return path if isinstance(path, Path) else Path(path).expanduser()
-
-
 def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDict:
     """Read the config from a file(s) as an :class:`ONDict`.
 
     How the config is constructed depends on the ``merge`` flag. If :obj:`True`, the
-    files are searched in the reverse order, and the config is read from each existing
-    file and merged in that order. If :obj:`False`, then the files are searched for in
+    files are searched in the reverse order, and the configs are read from all existing
+    files and merged in that order. If :obj:`False`, then the files are searched for in
     the order given in ``paths``, and the first existing file provides the config to be
     read (and the rest are ignored).
 
@@ -87,17 +84,14 @@ class IO:
         """Update config from files.
 
         How the config is constructed depends on the ``merge`` flag. If :obj:`True`, the
-        files are searched in the reverse order, and the config is read from each
-        existing file and merged in that order. If :obj:`False`, then the files are
+        files are searched in the reverse order, and the configs are read from all
+        existing files and merged in that order. If :obj:`False`, then the files are
         searched for in the order given in ``paths``, and the first existing file
         provides the config to be read (and the rest are ignored).
 
         Args:
             paths: A list of config file paths.
             merge: The flag for the merge mode; see the function description.
-
-        Returns:
-            An :class:`~resconfig.ondict.ONDict` object.
         """
         self.update(read_from_files_as_dict(paths, merge))
 
