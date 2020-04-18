@@ -3,23 +3,30 @@ from argparse import Namespace
 
 from .io.io import read_from_files_as_dict
 from .ondict import ONDict
+from .typing import Dict
+from .typing import Set
 
 
 class CLArgs:
     def add_arguments_to_argparse(
-        self, parser: ArgumentParser, prefix: str = "", ignore: set = None
+        self, parser: ArgumentParser, prefix: str = "", ignore: Set[str] = None
     ):
-        """Add the config arguments to the ArgumentParser.
+        """Add config arguments to ArgumentParser.
 
-        The long option will be ``-``-delimited for nested keys, e.g.,
-        ``config["foo.bar"]`` will be mapped to ``--foo-bar``. If ``prefix`` is
-        supplied, the supplied string is prepended to the long option, e.g.,
-        ``--prefix-foo-bar``.
+        The method add to the parser arguments that exist in the default config supplied
+        on the instantiation of :class:`~resconfig.ResConfig` object. The long option
+        will be “-”-delimited for nested keys, e.g., ``config["foo.bar"]`` will be
+        mapped to ``--foo-bar``. If ``prefix`` is supplied, the prefix is prepended to
+        the long option, e.g., ``--prefix-foo-bar``.
+
+        To prevent the method from adding arguments to the parser for some keys, supply
+        ``ignore`` with a set of keys to ignore, e.g., ``{"foo.bar"}``, so that
+        ``--foo-bar`` will not be added.
 
         Args:
-            parser: The parser object to which config arguments are added.
-            prefix: The argument prefix.
-            ignore: The configuration keys to ignore.
+            parser: Parser object to which config arguments are added.
+            prefix: Argument prefix.
+            ignore: Config keys to ignore.
         """
         ignore = ignore or set()
         for key in self._default.allkeys():
@@ -30,23 +37,44 @@ class CLArgs:
                 parser.add_argument(longopt, default=default)
 
     def prepare_from_argparse(
-        self, args: Namespace, config_paths=None, prefix: str = "", keymap: dict = None
+        self,
+        args: Namespace,
+        config_file_arg: str = None,
+        prefix: str = "",
+        keymap: Dict[str, str] = None,
     ):
-        """Prepare the config from :class:`~argparse.ArgumentParser` result.
+        """Prepare config from :class:`~argparse.ArgumentParser` result.
+
+        See the docstring of :meth:`~resconfig.ResConfig.add_arguments_to_argparse` for
+        the rule on how parser long options map to config keys. If long options do not
+        directly map to config keys by that rule, you can supply ``prefix`` or
+        ``keymap`` to define your own mapping. For example, if you want to map
+        ``--long-opt`` (which would be parsed as the ``long_opt`` attribute) to the
+        ``foo.bar`` config key, use ``{"long_opt": "foo.bar"}`` for ``keymap``.
+
+        If you want to allow config file(s) to be specified through
+        :class:`~argparse.ArgumentParser`, specify the attribute name for the argument
+        to ``config_file_arg``.
 
         Args:
-            args: The :class:`~argparse.Namespace` object returned from
-                  :meth:`~argparse.ArgumentParser.parse_args`.
-            config_paths: TBD.
-            prefix: The argument prefix.
-            keymap: The key mapping from the parsed argument name to the config key.
+            args: Parse result returned from
+                :meth:`~argparse.ArgumentParser.parse_args`.
+            config_file_arg: The attribute name for config files.
+            prefix: Argument prefix.
+            keymap: Key mapping from the parsed argument name to the config key.
         """
+        args = vars(args)
         keymap = keymap or {}
         conf = ONDict()
-        if config_paths:
-            conf.merge(read_from_files_as_dict(config_paths, self._merge_config_files))
+        if config_file_arg and config_file_arg in args:
+            paths = args[config_file_arg]
+            if paths:
+                paths = paths if isinstance(paths, (list, tuple)) else [paths]
+                conf.merge(read_from_files_as_dict(paths, self._merge_config_files))
 
-        for k, v in vars(args).items():
+        # TODO: Prune items not in default config above?
+
+        for k, v in args.items():
             if k in keymap:
                 k = keymap[k]
             else:

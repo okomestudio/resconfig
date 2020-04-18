@@ -117,8 +117,7 @@ class TestGet(TestCase):
 
     def test_without_default(self):
         conf = ResConfig(self.default)
-        with pytest.raises(KeyError):
-            conf.get("non")
+        assert conf.get("non") is None
 
 
 class TestReplace(TestCase):

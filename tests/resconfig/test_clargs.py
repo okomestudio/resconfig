@@ -68,3 +68,56 @@ class TestCLArgs:
         args = p.parse_args([])
         conf.prepare_from_argparse(args, **kwargs)
         assert conf._clargs["foo.bar.baz"] == expected
+
+    def _test_prepare_from_argparse_with_conf_file_arg(
+        self, savedconfigfile, kwargs, args
+    ):
+        filename, _ = savedconfigfile
+        args = [filename if a == "FILENAME" else a for a in args]
+        conf = ResConfig(self.default)
+        p = ArgumentParser()
+        p.add_argument("--conf", **kwargs)
+        args = p.parse_args(args)
+        conf.prepare_from_argparse(args, config_file_arg="conf")
+        return conf
+
+    @pytest.fixture
+    def savedconfigfile(self, filename):
+        expected = "5234"
+        conf = ResConfig({"foo.bar": expected})
+        conf.save_to_file(filename)
+        yield filename, expected
+
+    @pytest.mark.parametrize(
+        "kwargs, args",
+        [
+            ({}, ["--conf", "FILENAME"]),
+            ({"action": "append"}, ["--conf", "nonexisting", "--conf", "FILENAME"]),
+        ],
+    )
+    def test_prepare_from_argparse_with_conf_file_arg(
+        self, savedconfigfile, kwargs, args
+    ):
+        _, expected = savedconfigfile
+        conf = self._test_prepare_from_argparse_with_conf_file_arg(
+            savedconfigfile, kwargs, args
+        )
+        assert conf._clargs["foo.bar"] == expected
+
+    @pytest.mark.parametrize(
+        "kwargs, args",
+        [
+            ({}, []),
+            ({}, ["--conf", "nonexisting"]),
+            ({"action": "append"}, ["--conf", "nonexisting", "--conf", "nonexisting"]),
+        ],
+    )
+    def test_prepare_from_argparse_with_conf_file_arg_error(
+        self, savedconfigfile, kwargs, args
+    ):
+        _, expected = savedconfigfile
+        conf = self._test_prepare_from_argparse_with_conf_file_arg(
+            savedconfigfile, kwargs, args
+        )
+        with pytest.raises(KeyError):
+            conf._clargs["foo.bar"]

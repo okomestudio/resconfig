@@ -1,4 +1,5 @@
 import os
+from collections.abc import Iterable
 from copy import deepcopy
 from enum import Enum
 from logging import getLogger
@@ -14,10 +15,13 @@ from .ondict import isdict
 from .ondict import merge
 from .schema import Schema
 from .typing import Any
+from .typing import Dict
 from .typing import FilePath
 from .typing import Key
 from .typing import List
 from .typing import Optional
+from .typing import Tuple
+from .typing import WatchFunction
 from .watchers import Watchable
 from .watchers import Watchers
 
@@ -33,42 +37,45 @@ class Sentinel(Enum):
 
 
 class ResConfig(Watchable, IO, CLArgs):
-    """Application resource configuration.
+    """An application resource configuration.
+
+    This object holds the state and the internal data structure for the configuration.
 
     Args:
         default: Default config.
-        config_files: List of filenames with configurations.
-        envvar_prefix: The prefix used for environment variables.
-        load_on_init: True to load config on instantiation.
-        merge_config_files:
+        config_files: List of config filename paths.
+        envvar_prefix: Prefix used for environment variables used as configuration.
+        load_on_init: :obj:`True` to load config on instantiation, :obj:`False` to skip.
+        merge_config_files: :obj:`True` to merge all configs from existing files,
+            :obj:`False` to read only the config from the first existing file.
         schema: *Experimental:* Config schema.
         watchers: Config watchers.
-
     """
 
     def __init__(
         self,
-        default: dict = None,
-        config_files: List[FilePath] = None,
+        default: Optional[dict] = None,
+        config_files: Optional[List[FilePath]] = None,
         envvar_prefix: str = "",
         load_on_init: bool = True,
         merge_config_files: bool = False,
-        schema: dict = None,
-        watchers: dict = None,
+        schema: Optional[dict] = None,
+        watchers: Optional[Dict[Key, List[WatchFunction]]] = None,
     ):
-        self._watchers = Watchers()
-        for k, v in (watchers or {}).items():
-            for func in v if isinstance(v, (list, tuple)) else [v]:
-                self.register(k, v)
-
-        self._schema = Schema(schema or {})
         self._default = ONDict(default or {})
-        self._clargs = ONDict()
         self._config_files = (
             [ensure_path(p) for p in config_files] if config_files else []
         )
-        self._merge_config_files = merge_config_files
         self._envvar_prefix = envvar_prefix
+        self._clargs = ONDict()
+        self._merge_config_files = merge_config_files
+        self._schema = Schema(schema or {})
+        self._watchers = Watchers()
+        for k, v in (watchers or {}).items():
+            for func in v if isinstance(v, Iterable) else [v]:
+                self.register(k, v)
+
+        # This is where the active config is stored.
         self._conf = ONDict()
 
         if load_on_init:
@@ -87,7 +94,11 @@ class ResConfig(Watchable, IO, CLArgs):
         return dict(deepcopy(self._conf))
 
     def _prepare_config(self) -> ONDict:
-        """Prepare a new :class:`ONDict` object with the current object state."""
+        """Prepare a new :class:`ONDict` object with the current object state.
+
+        Returns:
+             An :class:`~resconfig.ondict.ONDict` object.
+        """
         new = deepcopy(self._default)
 
         if self._config_files:
@@ -107,26 +118,45 @@ class ResConfig(Watchable, IO, CLArgs):
 
         return new
 
+    def get(self, key: Key, default: Optional[Any] = None) -> Any:
+        """Return the config value for key if it exists, else default.
+
+        Args:
+            key: Config key.
+            default: Default value if key is not in config.
+
+        Returns:
+            The value found for the key.
+        """
+        try:
+            value = self._conf[key]
+        except Exception:
+            return default
+        return deepcopy(value)
+
     def load(self):
         """Load the prepared config."""
         self.replace(self._prepare_config())
 
-    def reset(self):
-        """Reset config to default."""
-        self.replace(deepcopy(self._default))
+    def __update(
+        self, key: Tuple[str], conf: dict, newconf: dict, replace: bool = False
+    ) -> Tuple[Action, Any, Any]:
+        """Perform config update recursively.
 
-    def get(self, key: Key, default: Optional[Any] = Sentinel.MISSING) -> Any:
-        """Get the config item at the key."""
-        try:
-            value = self._conf[key]
-        except Exception:
-            if default is Sentinel.MISSING:
-                raise
-            else:
-                return default
-        return deepcopy(value)
+        Tuple of keys to the current node ``k`` holds the full path from the root, i.e.,
+        ``("root", "k1", "k2", ..., "k")``, where ``conf["k"]`` and ``newconf["k"]`` is
+        the node to be inspected at the current call stack. The full key path needs to
+        be retained this way to notify watch functions.
 
-    def __update(self, key: Key, conf: dict, newconf: dict, replace: bool = False):
+        Args:
+            key: Tuple of keys to the current node.
+            conf: Old config to be updated.
+            newconf: New config to update with.
+            replace: :obj:`True` to perform replacement instead of merge.
+
+        Returns:
+            A tuple of action, old value, and new value for the current key.
+        """
         _key = key[-1]
 
         if not isdict(newconf[_key]):
@@ -210,12 +240,24 @@ class ResConfig(Watchable, IO, CLArgs):
 
     @flexdictargs
     def update(self, conf: dict):
-        """Update config with the given config."""
+        """Perform update of config.
+
+        Args:
+            conf: Config to update with.
+        """
         k = "__ROOT__"  # Insert a layer for the first iteration
         self.__update((k,), {k: self._conf}, {k: conf})
 
     @flexdictargs
     def replace(self, conf: dict):
-        """Replace config with the given config."""
+        """Perform replacement of config.
+
+        Args:
+            conf: Config for replacement.
+        """
         k = "__ROOT__"  # Insert a layer for the first iteration
         self.__update((k,), {k: self._conf}, {k: conf}, replace=True)
+
+    def reset(self):
+        """Reset config to default."""
+        self.replace(deepcopy(self._default))
