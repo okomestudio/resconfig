@@ -1,4 +1,5 @@
 from pathlib import Path
+from typing import IO  # noqa
 from typing import Callable  # noqa
 from typing import Dict  # noqa
 from typing import Generator  # noqa
