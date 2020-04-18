@@ -1,0 +1,13 @@
+---
+version: 2
+formats:
+  - htmlzip
+python:
+  version: 3.7
+  install:
+    - method: pip
+      path: .[doc]
+  system_packages: true
+sphinx:
+  builder: html
+  configuration: docs/source/conf.py
