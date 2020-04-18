@@ -1,4 +1,5 @@
 import os
+from argparse import Namespace
 
 import pytest
 from resconfig.resconfig import ResConfig
@@ -66,21 +67,32 @@ class TestPrepareConfig(TestCase):
         rc = ResConfig(self.default)
         assert rc._prepare_config() == rc._default
 
-    def test_from_files(self):
-        from_files = [{"x1": 55, "x4.y3.z2": "foo"}]
-        rc = ResConfig(self.default)
-        result = rc._prepare_config(from_files=from_files)
-        for key in ("x1", "x4.y3.z2"):
-            assert result[key] == from_files[0][key]
+    def test_config_files(self, filename):
+        conf_from_file = {"x1.y1": "55", "x4.y3": "foobarbaz"}
+        ResConfig(conf_from_file).save_to_file(filename)
+        rc = ResConfig(self.default, config_files=[filename])
+        result = rc._prepare_config()
+        for key in ("x1.y1", "x4.y3"):
+            assert result[key] == conf_from_file[key]
 
     @pytest.mark.parametrize("envvar_prefix", ["", "RC_"])
-    def test_from_env(self, envvar_prefix):
-        from_files = [{"x1": 55, "x4.y3.z2": "foo"}]
-        env = {envvar_prefix + "X1": 55, envvar_prefix + "X4_Y3_Z2": "bar"}
+    def test_env(self, envvar_prefix, monkeypatch):
+        env = {envvar_prefix + "X1": "55", envvar_prefix + "X4_Y3_Z2": "bar"}
+        for k, v in env.items():
+            monkeypatch.setenv(k, v)
         rc = ResConfig(self.default, envvar_prefix=envvar_prefix)
-        result = rc._prepare_config(from_files=from_files, from_env=env)
+        result = rc._prepare_config()
         assert result["x1"] == env[envvar_prefix + "X1"]
         assert result["x4.y3.z2"] == env[envvar_prefix + "X4_Y3_Z2"]
+
+    def test_clargs(self):
+        args = Namespace()
+        args.__dict__ = {"x1": 55, "x4_y3_z2": "bar"}
+        rc = ResConfig(self.default)
+        rc.prepare_from_argparse(args)
+        result = rc._prepare_config()
+        for key in ("x1", "x4.y3.z2"):
+            assert result[key] == getattr(args, key.replace(".", "_"))
 
 
 class TestIndexAccess(TestCase):

@@ -8,6 +8,7 @@ from .actions import Action
 from .clargs import CLArgs
 from .io import IO
 from .io.io import read_from_files_as_dict
+from .io.utils import ensure_path
 from .ondict import ONDict
 from .ondict import flexdictargs
 from .ondict import isdict
@@ -65,7 +66,7 @@ class ResConfig(Watchable, IO, CLArgs):
         self._default = ONDict(default or {})
         self._clargs = ONDict()
         self._config_files = (
-            [Path(p).expanduser() for p in config_files] if config_files else []
+            [ensure_path(p) for p in config_files] if config_files else []
         )
         self._merge_config_files = merge_config_files
         self._envvar_prefix = envvar_prefix
@@ -86,29 +87,17 @@ class ResConfig(Watchable, IO, CLArgs):
         """Return the config as a dict object."""
         return dict(deepcopy(self._conf))
 
-    def _prepare_config(
-        self,
-        from_files: Optional[List[ONDict]] = None,
-        from_env: Optional[os._Environ] = None,
-        from_clargs=None,
-    ):
-        """Prepare a ONDict to update the configuration with."""
+    def _prepare_config(self) -> ONDict:
+        """Prepare a new :class:`ONDict` object with the current object state."""
         new = deepcopy(self._default)
 
-        if from_files:
-            for conf in from_files:
-                new.merge(conf)
-        else:
-            if self._config_files:
-                new.merge(
-                    read_from_files_as_dict(
-                        self._config_files, self._merge_config_files
-                    )
-                )
+        if self._config_files:
+            new.merge(
+                read_from_files_as_dict(self._config_files, self._merge_config_files)
+            )
 
-        env = os.environ if from_env is None else from_env
-        clargs = self._clargs if from_clargs is None else from_clargs
-
+        env = os.environ
+        clargs = self._clargs
         for key in self._default.allkeys():
             envkey = self._envvar_prefix + ("_".join(key)).upper()
             if envkey in env:
