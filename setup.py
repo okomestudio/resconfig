@@ -59,7 +59,7 @@ setup_requires = []
 dev_requires = [
     "black>=19.10b0",
     "flake8>=3.7.9",
-    "isort>=4.3.21",
+    "isort[pyproject]>=4.3.21",
     "pre-commit>=2.2.0",
     "seed-isort-config>=2.1.1",
 ]
