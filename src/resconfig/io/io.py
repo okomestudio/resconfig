@@ -7,6 +7,7 @@ from ..typing import FilePath
 from ..typing import List
 from ..typing import NewType
 from ..typing import Optional
+from ..utils import experimental
 from . import ini
 from . import json
 from . import toml
@@ -135,6 +136,7 @@ class IO:
         with open(filename, "w") as f:
             dump(d, f)
 
+    @experimental
     def save_to_file(self, filename: FilePath):
         """Save config to the file.
 
@@ -142,18 +144,22 @@ class IO:
         """
         self.__save(filename, _suffix_to_filetype(filename))
 
+    @experimental
     def save_to_ini(self, filename: FilePath):
         """Save config to the INI file."""
         self.__save(filename, FileType.ini)
 
+    @experimental
     def save_to_json(self, filename: FilePath):
         """Save config to the JSON file."""
         self.__save(filename, FileType.json)
 
+    @experimental
     def save_to_toml(self, filename: FilePath):
         """Save config to the TOML file."""
         self.__save(filename, FileType.toml)
 
+    @experimental
     def save_to_yaml(self, filename: FilePath):
         """Save config to the YAML file."""
         self.__save(filename, FileType.yaml)

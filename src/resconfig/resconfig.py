@@ -2,7 +2,6 @@ import os
 from copy import deepcopy
 from enum import Enum
 from logging import getLogger
-from pathlib import Path
 
 from .actions import Action
 from .clargs import CLArgs
@@ -42,7 +41,7 @@ class ResConfig(Watchable, IO, CLArgs):
         envvar_prefix: The prefix used for environment variables.
         load_on_init: True to load config on instantiation.
         merge_config_files:
-        schema: Config schema.
+        schema: *Experimental:* Config schema.
         watchers: Config watchers.
 
     """
