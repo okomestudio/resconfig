@@ -58,7 +58,7 @@ setup_requires = []
 
 dev_requires = ["black>=19.10b0", "flake8>=3.7.9", "isort>=4.3.21", "pre-commit>=2.2.0"]
 
-doc_requires = ["sphinx>=3.0.1"]
+doc_requires = ["sphinx>=3.0.1", "sphinx_autodoc_typehints>=1.10.3"]
 
 tests_require = ["coverage[toml]>=5.0.4", "pytest>=5.4.1", "pytest-cov>=2.8.1"]
 
