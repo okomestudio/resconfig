@@ -56,7 +56,13 @@ requires = ["PyYAML>=5.3.1", "toml>=0.10.0"]
 
 setup_requires = []
 
-dev_requires = ["black>=19.10b0", "flake8>=3.7.9", "isort>=4.3.21", "pre-commit>=2.2.0"]
+dev_requires = [
+    "black>=19.10b0",
+    "flake8>=3.7.9",
+    "isort>=4.3.21",
+    "pre-commit>=2.2.0",
+    "seed-isort-config>=2.1.1",
+]
 
 doc_requires = ["sphinx>=3.0.1", "sphinx_autodoc_typehints>=1.10.3"]
 
