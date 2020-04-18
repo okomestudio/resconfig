@@ -18,9 +18,19 @@ User's Guide
 .. toctree::
    :maxdepth: 2
 
+   intro
    installation
    quickstart
    watch_functions
+
+
+Notes
+-----
+
+.. toctree::
+   :maxdepth: 2
+
+   changelog
 
 
 API Reference

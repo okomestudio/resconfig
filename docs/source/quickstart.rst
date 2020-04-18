@@ -41,8 +41,12 @@ above:
 Use with Configuration Files
 ----------------------------
 
-By supplying file paths, :class:`~resconfig.ResConfig` will read the
-configuration from the first existing file:
+:class:`~resconfig.ResConfig` understands INI (`.ini`), JSON
+(`.json`), TOML (`.toml`), and YAML (`.yaml` or `.yml`); the file
+format is inferred from the extension. The filename with no extension
+is assumed to be of INI. Multiple config file paths can be supplied,
+and :class:`~resconfig.ResConfig` only reads from existing files and
+merge their configs:
 
 .. code-block:: python
 
@@ -50,15 +54,10 @@ configuration from the first existing file:
                                      "~/.myconf.yml,
                                      "/etc/myconf.yml"])
 
-The file format is inferred from the
-extension. :class:`~resconfig.ResConfig` currently understands INI
-(`.ini`), JSON (`.json`), TOML (`.toml`), and YAML (`.yaml` or
-`.yml`). The filename with no extension is assumed to be of INI.
-
-The current plan is to allow merge from multiple configuration files
-with precedence, so that one configuration with higher specificity can
-override another with lower specificity. This has not been implemented
-yet.
+In this case, if any of the files supplied exists, they are read in
+the reverse order, i.e., */etc/myconf.yml*, *~/.myconf.yml*, and
+*myconf.yml*, and merged in that order. This allows layered
+configuration based on specificity.
 
 
 Use with Environment Variables

@@ -13,6 +13,17 @@ ResConfig Object
    :show-inheritance:
 
 
+Actions
+-------
+
+.. autoclass:: resconfig.actions.Action
+   :members:
+   :inherited-members:
+
+
+Developer API
+=============
+
 ONDict Object
 -------------
 
@@ -20,11 +31,3 @@ ONDict Object
    :members:
    :inherited-members:
    :show-inheritance:
-
-
-Actions
--------
-
-.. autoclass:: resconfig.actions.Action
-   :members:
-   :inherited-members:
