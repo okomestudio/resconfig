@@ -28,12 +28,12 @@ from .watchers import Watchers
 log = getLogger(__name__)
 
 
-class Sentinel(Enum):
-    MISSING = object()
-    """Sentinel value for missing value."""
+class Flag(Enum):
+    MISSING = 1
+    """Flag missing value."""
 
-    REMOVE = object()
-    """Sentinel value indicating the config key to be removed."""
+    REMOVE = 2
+    """Flag config item to be removed."""
 
 
 class ResConfig(Watchable, IO, CLArgs):
@@ -163,22 +163,22 @@ class ResConfig(Watchable, IO, CLArgs):
             newval = self._schema.apply(key[1:], newconf[_key])
             action = None
             if not isdict(conf):
-                oldval = Sentinel.MISSING
-                if newval is not Sentinel.REMOVE:
+                oldval = Flag.MISSING
+                if newval is not Flag.REMOVE:
                     action = Action.ADDED
-            elif _key not in conf or conf[_key] is Sentinel.MISSING or not conf[_key]:
-                oldval = Sentinel.MISSING
-                if newval is not Sentinel.REMOVE:
+            elif _key not in conf or conf[_key] is Flag.MISSING or not conf[_key]:
+                oldval = Flag.MISSING
+                if newval is not Flag.REMOVE:
                     action = Action.ADDED
             else:
                 oldval = deepcopy(conf[_key])
-                if newval is Sentinel.REMOVE:
+                if newval is Flag.REMOVE:
                     action = Action.REMOVED
                 elif oldval != newval:
                     action = Action.MODIFIED
             return action, oldval, newval
 
-        oldval_at_dict_node = deepcopy(conf[_key]) if _key in conf else Sentinel.MISSING
+        oldval_at_dict_node = deepcopy(conf[_key]) if _key in conf else Flag.MISSING
         newval_at_dict_node = ONDict()
 
         conf.setdefault(_key, ONDict())
@@ -220,16 +220,16 @@ class ResConfig(Watchable, IO, CLArgs):
                         key[1:] + (subkey,),
                         Action.REMOVED,
                         conf[_key][subkey],
-                        Sentinel.REMOVE,
+                        Flag.REMOVE,
                     )
                 del conf[_key][subkey]
 
         # Define the action performed on this dict node.
         action = None
         if newval_at_dict_node:
-            if not oldval_at_dict_node or oldval_at_dict_node is Sentinel.MISSING:
+            if not oldval_at_dict_node or oldval_at_dict_node is Flag.MISSING:
                 action = Action.ADDED
-                oldval_at_dict_node = Sentinel.MISSING
+                oldval_at_dict_node = Flag.MISSING
             else:
                 if newval_at_dict_node != oldval_at_dict_node:
                     action = Action.MODIFIED

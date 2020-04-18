@@ -5,7 +5,7 @@ import pytest
 from resconfig import ResConfig
 from resconfig.actions import Action
 from resconfig.ondict import get
-from resconfig.resconfig import Sentinel
+from resconfig.resconfig import Flag
 
 from .test_resconfig import TestCase
 
@@ -106,7 +106,7 @@ class TestReload(TestCase):
                 func.assert_not_called
             else:
                 v = get(self.default, key)
-                func.assert_called_with(Action.ADDED, Sentinel.MISSING, v)
+                func.assert_called_with(Action.ADDED, Flag.MISSING, v)
                 assert func.call_count == 1
 
         conf.reload()
@@ -138,7 +138,7 @@ class TestUpdate(TestCase):
         conf.register(key, watcher)
         conf.update({key: newval})
         assert conf.get(key) == newval
-        watcher.assert_called_with(Action.ADDED, Sentinel.MISSING, newval)
+        watcher.assert_called_with(Action.ADDED, Flag.MISSING, newval)
 
     @pytest.mark.parametrize(
         "key, newval, expected",
@@ -176,14 +176,12 @@ class TestUpdate(TestCase):
         assert key in conf
         watcher = mock.Mock()
         conf.register(key, watcher)
-        conf.update({key: Sentinel.REMOVE})
+        conf.update({key: Flag.REMOVE})
         for k in removed:
             assert k not in conf
         for k in remain:
             assert k in conf
-        watcher.assert_called_with(
-            Action.REMOVED, get(self.default, key), Sentinel.REMOVE
-        )
+        watcher.assert_called_with(Action.REMOVED, get(self.default, key), Flag.REMOVE)
 
     def test_removed(self, default_config_key, all_default_config_keys):
         key = default_config_key
@@ -192,7 +190,7 @@ class TestUpdate(TestCase):
         oldval = get(self.default, key)
         watcher = mock.Mock()
         conf.register(key, watcher)
-        conf.update({key: Sentinel.REMOVE})
+        conf.update({key: Flag.REMOVE})
         # TODO: Test non-existence of removed keys
         # TODO: Test existence of remaining keys
-        watcher.assert_called_with(Action.REMOVED, oldval, Sentinel.REMOVE)
+        watcher.assert_called_with(Action.REMOVED, oldval, Flag.REMOVE)
