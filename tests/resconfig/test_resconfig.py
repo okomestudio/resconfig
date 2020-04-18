@@ -2,6 +2,7 @@ import os
 from argparse import Namespace
 
 import pytest
+
 from resconfig.resconfig import ResConfig
 
 

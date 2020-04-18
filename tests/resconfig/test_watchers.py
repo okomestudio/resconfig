@@ -1,6 +1,7 @@
 from unittest import mock
 
 import pytest
+
 from resconfig import ResConfig
 from resconfig.actions import Action
 from resconfig.ondict import get

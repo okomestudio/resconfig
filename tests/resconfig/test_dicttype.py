@@ -1,6 +1,7 @@
 from copy import deepcopy
 
 import pytest
+
 from resconfig.ondict import ONDict
 from resconfig.ondict import merge
 from resconfig.ondict import normalize

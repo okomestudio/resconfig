@@ -1,4 +1,5 @@
 import pytest
+
 from resconfig import ResConfig
 
 
