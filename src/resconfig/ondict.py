@@ -1,3 +1,4 @@
+import re
 from collections import OrderedDict
 from collections.abc import MutableMapping
 from functools import wraps
@@ -158,12 +159,28 @@ def get(dic: dict, key: Key) -> Any:
 
 
 def normkey(key: Key) -> Generator[str, None, None]:
+    """Normalize key.
+
+    If the input key is “.”-delimit nested keys, it is split on the delimiter. If the
+    input key is a tuple of keys, they are simply yielded.
+
+    In the string form, escaped “.” characters are not interpreted as delimiters.
+
+    Args:
+        key: Input key.
+
+    Returns:
+        Generator of str keys.
+
+    Raises:
+        TypeError: When input key is neither :class:`str` or :class:`tuple`.
+    """
     if isinstance(key, tuple):
         for k in key:
             yield k
     elif isinstance(key, str):
         if "." in key:
-            for k in key.split("."):
+            for k in re.split(r"(?<!\\)\.", key):
                 yield k
         else:
             yield key

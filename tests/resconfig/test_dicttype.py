@@ -240,7 +240,12 @@ class TestNormalize:
 class TestNormkey:
     @pytest.mark.parametrize(
         "key, expected",
-        [("a", ["a"]), ("a.b.c", ["a", "b", "c"]), (("a", "b", "c"), ["a", "b", "c"])],
+        [
+            ("a", ["a"]),
+            ("a.b.c", ["a", "b", "c"]),
+            (("a", "b", "c"), ["a", "b", "c"]),
+            ("a.foo\.bar.b", ["a", "foo\.bar", "b"]),
+        ],
     )
     def test(self, key, expected):
         assert list(normkey(key)) == expected
