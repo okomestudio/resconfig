@@ -24,11 +24,12 @@ exclude = '''
 
 [tool.coverage.report]
 exclude_lines = [
-    "pragma: no cover",
     "def __repr__",
     "def __str__",
+    "except ImportError",
     "if __name__ == .__main__.:",
     "log(|ging).(debug|info|warning)",
+    "pragma: no cover",
     "raise AssertionError",
     "raise NotImplementedError",
 ]
