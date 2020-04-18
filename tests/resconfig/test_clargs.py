@@ -1,6 +1,7 @@
 from argparse import ArgumentParser
 
 import pytest
+
 from resconfig import ResConfig
 
 

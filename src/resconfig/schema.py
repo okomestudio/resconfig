@@ -1,8 +1,3 @@
-"""resconfig.schema
-===================
-
-TBD.
-"""
 from .ondict import ONDict
 
 
