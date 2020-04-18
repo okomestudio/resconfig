@@ -244,7 +244,7 @@ class TestNormkey:
             ("a", ["a"]),
             ("a.b.c", ["a", "b", "c"]),
             (("a", "b", "c"), ["a", "b", "c"]),
-            ("a.foo\.bar.b", ["a", "foo\.bar", "b"]),
+            (r"a.foo\.bar.b", ["a", r"foo\.bar", "b"]),
         ],
     )
     def test(self, key, expected):
