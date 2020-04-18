@@ -58,7 +58,7 @@ class ResConfig(Watchable, IO, CLArgs):
         config_files: Optional[List[FilePath]] = None,
         envvar_prefix: str = "",
         load_on_init: bool = True,
-        merge_config_files: bool = False,
+        merge_config_files: bool = True,
         schema: Optional[dict] = None,
         watchers: Optional[Dict[Key, List[WatchFunction]]] = None,
     ):
