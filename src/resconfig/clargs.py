@@ -33,7 +33,7 @@ class CLArgs:
             if ".".join(key) not in ignore:
                 default = self._default[key]
                 key = (prefix,) + key if prefix else key
-                longopt = "--" + "-".join(key)
+                longopt = "--" + "-".join(k.replace(r"\.", ".") for k in key)
                 parser.add_argument(longopt, default=default)
 
     def prepare_from_argparse(
@@ -74,14 +74,14 @@ class CLArgs:
 
         # TODO: Prune items not in default config above?
 
-        for k, v in args.items():
+        for k, v in (item for item in args.items() if item[0] != config_file_arg):
             if k in keymap:
                 k = keymap[k]
             else:
-                k = ".".join(k.split("_"))
+                k = ".".join(i.replace(".", r"\.") for i in k.split("_"))
                 if prefix and k.startswith(prefix):
                     k = k[len(prefix) + 1 :]
             if k in self._default:
-                conf.update({k: v})
+                conf.merge(ONDict({k: v}))
 
         self._clargs = conf

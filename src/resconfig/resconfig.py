@@ -109,7 +109,9 @@ class ResConfig(Watchable, IO, CLArgs):
         env = os.environ
         clargs = self._clargs
         for key in self._default.allkeys():
-            envkey = self._envvar_prefix + ("_".join(key)).upper()
+            envkey = self._envvar_prefix + "_".join(
+                k.replace(r"\.", "_").upper() for k in key
+            )
             if envkey in env:
                 new[key] = env[envkey]
 

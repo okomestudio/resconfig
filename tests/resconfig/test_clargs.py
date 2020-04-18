@@ -7,7 +7,7 @@ from resconfig import ResConfig
 
 @pytest.fixture
 def default():
-    default = {"foo": {"bar": {"baz": None}}}
+    default = {"foo": {r"ba\.r": {"baz": None}}}
     yield default
 
 
@@ -26,39 +26,39 @@ class TestCLArgs:
 
     @pytest.mark.parametrize("default_value", [1, "str"])
     def test_add_arguments_to_argparse_to_default(self, default_value):
-        self.default["foo"]["bar"]["baz"] = default_value
+        self.default["foo"][r"ba\.r"]["baz"] = default_value
         args = self._parse()
-        assert args.foo_bar_baz == default_value
+        assert getattr(args, "foo_ba.r_baz") == default_value
 
     @pytest.mark.parametrize("default_value", [1, "str"])
     def test_add_arguments_to_argparse_to_arg(self, default_value):
-        self.default["foo"]["bar"]["baz"] = default_value
+        self.default["foo"][r"ba\.r"]["baz"] = default_value
         expected = "THIS"
-        args = self._parse(["--foo-bar-baz", expected])
-        assert args.foo_bar_baz == expected
+        args = self._parse(["--foo-ba.r-baz", expected])
+        assert getattr(args, "foo_ba.r_baz") == expected
 
-    @pytest.mark.parametrize("clargs", [[], ["--prefix-foo-bar-baz", "bar"]])
+    @pytest.mark.parametrize("clargs", [[], ["--prefix-foo-ba.r-baz", "bar"]])
     def test_add_arguments_to_argparse_with_prefix(self, clargs):
         expected = clargs[1] if clargs else "foo"
-        self.default["foo"]["bar"]["baz"] = expected
+        self.default["foo"][r"ba\.r"]["baz"] = expected
         args = self._parse(clargs, prefix="prefix")
-        assert args.prefix_foo_bar_baz == expected
+        assert getattr(args, "prefix_foo_ba.r_baz") == expected
 
     def test_add_arguments_to_argparse_with_ignore(self):
-        ignore = {"foo.bar.baz"}
+        ignore = {r"foo.ba\.r.baz"}
         expected = "foo"
-        self.default["foo"]["bar"]["baz"] = expected
+        self.default["foo"][r"ba\.r"]["baz"] = expected
         args = self._parse([], ignore=ignore)
         with pytest.raises(AttributeError) as exc:
-            args.foo_bar_baz
-        assert "foo_bar_baz" in str(exc.value)
+            getattr(args, "foo_ba.r_baz")
+        assert "foo_ba.r_baz" in str(exc.value)
 
     @pytest.mark.parametrize(
         "longarg, kwargs",
         [
-            ("--foo-bar-baz", {}),
-            ("--prefix-foo-bar-baz", {"prefix": "prefix"}),
-            ("--foobar", {"keymap": {"foobar": "foo.bar.baz"}}),
+            ("--foo-ba.r-baz", {}),
+            ("--prefix-foo-ba.r-baz", {"prefix": "prefix"}),
+            ("--foobar", {"keymap": {"foobar": r"foo.ba\.r.baz"}}),
         ],
     )
     def test_prepare_from_argparse(self, longarg, kwargs):
@@ -68,7 +68,7 @@ class TestCLArgs:
         p.add_argument(longarg, default=expected)
         args = p.parse_args([])
         conf.prepare_from_argparse(args, **kwargs)
-        assert conf._clargs["foo.bar.baz"] == expected
+        assert conf._clargs[r"foo.ba\.r.baz"] == expected
 
     def _test_prepare_from_argparse_with_conf_file_arg(
         self, savedconfigfile, kwargs, args

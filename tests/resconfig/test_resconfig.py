@@ -63,7 +63,12 @@ class TestBasicAPI(TestCase):
         assert rc._conf == result
 
 
-class TestPrepareConfig(TestCase):
+class TestPrepareConfig:
+    @pytest.fixture(autouse=True)
+    def setup(self):
+        self.default = {"foo": {"bar": {"baz": 1}, r"ba\.r": {"baz": 2}}}
+        yield
+
     def test_default(self):
         rc = ResConfig(self.default)
         assert rc._prepare_config() == rc._default
@@ -78,22 +83,25 @@ class TestPrepareConfig(TestCase):
 
     @pytest.mark.parametrize("envvar_prefix", ["", "RC_"])
     def test_env(self, envvar_prefix, monkeypatch):
-        env = {envvar_prefix + "X1": "55", envvar_prefix + "X4_Y3_Z2": "bar"}
+        env = {
+            envvar_prefix + "FOO_BAR_BAZ": "bar",
+            envvar_prefix + "FOO_BA_R_BAZ": "foo",
+        }
         for k, v in env.items():
             monkeypatch.setenv(k, v)
         rc = ResConfig(self.default, envvar_prefix=envvar_prefix)
         result = rc._prepare_config()
-        assert result["x1"] == env[envvar_prefix + "X1"]
-        assert result["x4.y3.z2"] == env[envvar_prefix + "X4_Y3_Z2"]
+        assert result["foo.bar.baz"] == env[envvar_prefix + "FOO_BAR_BAZ"]
+        assert result[r"foo.ba\.r.baz"] == env[envvar_prefix + "FOO_BA_R_BAZ"]
 
     def test_clargs(self):
         args = Namespace()
-        args.__dict__ = {"x1": 55, "x4_y3_z2": "bar"}
+        args.__dict__ = {"foo_bar_baz": 55, "foo_ba.r_baz": "bar"}
         rc = ResConfig(self.default)
         rc.prepare_from_argparse(args)
         result = rc._prepare_config()
-        for key in ("x1", "x4.y3.z2"):
-            assert result[key] == getattr(args, key.replace(".", "_"))
+        assert result["foo.bar.baz"] == getattr(args, "foo_bar_baz")
+        assert result[r"foo.ba\.r.baz"] == getattr(args, "foo_ba.r_baz")
 
 
 class TestIndexAccess(TestCase):

@@ -233,7 +233,7 @@ class TestNormalize:
     @pytest.mark.parametrize("trial", [{"a": 1, "a.b": 2}, {"a.b": 1, "a.b.c": 2}])
     def test_inconsistent(self, trial):
         with pytest.raises(TypeError) as exc:
-            print(normalize(trial))
+            normalize(trial)
         assert "cannot convert" in str(exc)
 
 
