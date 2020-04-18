@@ -1,5 +1,8 @@
-from toml import dumps as _dump
-from toml import loads as _load
+try:
+    from toml import dumps as _dump
+    from toml import loads as _load
+except ImportError:
+    raise ImportError("toml package is missing")
 
 
 def load(f):

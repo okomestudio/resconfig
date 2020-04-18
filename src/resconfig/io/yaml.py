@@ -1,22 +1,22 @@
-import yaml
+try:
+    import yaml
+except ImportError:
+    raise ImportError("yaml package is missing")
 
 from ..ondict import ONDict
 
 
-class _Dumper(yaml.Dumper):
-    pass
-
-
-def _dict_representer(dumper, data):
-    return dumper.represent_mapping(
-        yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items()
-    )
-
-
-_Dumper.add_representer(ONDict, _dict_representer)
-
-
 def dump(data, stream, **kwargs):
+    class _Dumper(yaml.Dumper):
+        pass
+
+    def _dict_representer(dumper, data):
+        return dumper.represent_mapping(
+            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items()
+        )
+
+    _Dumper.add_representer(ONDict, _dict_representer)
+
     yaml.dump(data, stream, _Dumper, **kwargs)
 
 

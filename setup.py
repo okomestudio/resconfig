@@ -31,21 +31,31 @@ license = meta("license")
 readme = fread("README.rst")
 
 
-requires = ["PyYAML>=5.3.1", "toml>=0.10.0"]
+requires = []
+toml_requires = ["toml>=0.10.0"]
+yaml_requires = ["PyYAML>=5.3.1"]
 
 setup_requires = ["pytest-runner>=5.2"]
 
-dev_requires = [
-    "black>=19.10b0",
-    "flake8>=3.7.9",
-    "isort[pyproject]>=4.3.21",
-    "pre-commit>=2.2.0",
-    "seed-isort-config>=2.1.1",
-]
+dev_requires = (
+    [
+        "black>=19.10b0",
+        "flake8>=3.7.9",
+        "isort[pyproject]>=4.3.21",
+        "pre-commit>=2.2.0",
+        "seed-isort-config>=2.1.1",
+    ]
+    + toml_requires
+    + yaml_requires
+)
 
 doc_requires = ["sphinx>=3.0.1", "sphinx_autodoc_typehints>=1.10.3"]
 
-tests_require = ["coverage[toml]>=5.0.4", "pytest>=5.4.1", "pytest-cov>=2.8.1"]
+tests_require = (
+    ["coverage[toml]>=5.0.4", "pytest>=5.4.1", "pytest-cov>=2.8.1"]
+    + toml_requires
+    + yaml_requires
+)
 
 
 setup(
@@ -87,6 +97,8 @@ setup(
         "dev": dev_requires + tests_require,
         "doc": doc_requires,
         "tests": tests_require,
+        "toml": toml_requires,
+        "yaml": yaml_requires,
     },
     entry_points={"console_scripts": []},
 )
