@@ -16,3 +16,4 @@ repos:
     hooks:
       - id: isort
         language_version: python
+        additional_dependencies: [toml]
