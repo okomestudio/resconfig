@@ -2,11 +2,9 @@
 import codecs
 import os
 import re
-import sys
 
 from setuptools import find_packages
 from setuptools import setup
-from setuptools.command.test import test as TestCommand
 
 here = os.path.abspath(os.path.dirname(__file__))
 
@@ -33,28 +31,9 @@ license = meta("license")
 readme = fread("README.rst")
 
 
-class PyTest(TestCommand):
-    user_options = [("pytest-args=", "a", "Arguments to pass into py.test")]
-
-    def initialize_options(self):
-        TestCommand.initialize_options(self)
-        self.pytest_args = ["-vv", "--cov=src/resconfig", "--cov-report=term-missing"]
-
-    def finalize_options(self):
-        TestCommand.finalize_options(self)
-        self.test_args = []
-        self.test_suite = True
-
-    def run_tests(self):
-        import pytest
-
-        errno = pytest.main(self.pytest_args)
-        sys.exit(errno)
-
-
 requires = ["PyYAML>=5.3.1", "toml>=0.10.0"]
 
-setup_requires = []
+setup_requires = ["pytest-runner>=5.2"]
 
 dev_requires = [
     "black>=19.10b0",
@@ -101,8 +80,8 @@ setup(
     python_requires=">=3.6",
     license=license,
     scripts=[],
-    cmdclass={"tests": PyTest},
     install_requires=requires,
+    setup_requires=setup_requires,
     tests_require=tests_require,
     extras_require={
         "dev": dev_requires + tests_require,
