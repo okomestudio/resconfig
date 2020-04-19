@@ -5,6 +5,7 @@ workflows:
     jobs:
       - test-install:
           version: "3.8.2"
+          coverage: true
       - test-install:
           version: "3.7.7"
       - test-install:
@@ -71,6 +72,10 @@ jobs:
       version:
         type: string
         default: latest
+      coverage:
+        description: upload coverage report
+        type: boolean
+        default: false
     docker:
       - image: circleci/python:<< parameters.version >>
     working_directory: ~/repo
@@ -86,7 +91,7 @@ jobs:
             python3 -m venv venv || virtualenv venv
             . venv/bin/activate
             pip install -e .[tests]
-            pip install coveralls
+            << parameters.coverage >> && pip install coveralls || :
       - save_cache:
           key: v1-dependencies-{{ checksum "setup.py" }}
           paths:
@@ -96,7 +101,7 @@ jobs:
           command: |
             . venv/bin/activate
             python setup.py tests
-            coveralls
+            << parameters.coverage >> && coveralls || :
       - store_artifacts:
           path: test-reports
           destination: test-reports
