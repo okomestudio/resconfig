@@ -3,6 +3,9 @@ Unreleased
 
 Added:
 
+- Allow file formats to be hinted by wrapping as ConfigPath objects
+  (`#20 <https://github.com/okomestudio/resconfig/issues/20>`_).
+
 - The config precedence page in documentation (`#13
   <https://github.com/okomestudio/resconfig/issues/13>`_).
 
