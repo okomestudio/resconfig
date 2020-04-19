@@ -1,7 +1,7 @@
 try:
     import yaml
 except ImportError:
-    raise ImportError("yaml package is missing")
+    yaml = None
 
 from ..ondict import ONDict
 

@@ -2,7 +2,7 @@ try:
     from toml import dumps as _dump
     from toml import loads as _load
 except ImportError:
-    raise ImportError("toml package is missing")
+    _dump = _load = None
 
 
 def load(f):
