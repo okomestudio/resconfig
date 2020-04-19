@@ -2,10 +2,13 @@
  Changelog
 ===========
 
-20.4.3a.dev0
-------------------------
+Unreleased
+----------
 
-TBD.
+Fixed:
+
+- Environment variable overridden by command-line argument if the
+  latter does not default to None (#21).
 
 
 20.4.2a (April 18, 2020)
