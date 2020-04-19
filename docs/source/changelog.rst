@@ -5,6 +5,11 @@
 Unreleased
 ----------
 
+Added:
+
+- The config precedence page added to documentation (#13).
+
+
 Fixed:
 
 - Environment variable overridden by command-line argument if the

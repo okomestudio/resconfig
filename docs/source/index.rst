@@ -26,6 +26,7 @@ User's Guide
    envvars
    argparse
    watch_functions
+   precedence
 
 
 Notes
