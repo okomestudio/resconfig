@@ -6,30 +6,28 @@ resconfig
 *********
 
 *resconfig* is a minimalistic application configuration library for
-Python. It is essentially a thin wrapper around nested ``dict``
-objects and can:
+Python. It is a thin wrapper around nested ``dict`` objects with added
+features that make it easy to deal with the data structure as a
+centralized storage of application configuration.
 
-- Read from multiple configuration file formats: INI, JSON, TOML, and
-  YAML.
+``ResConfig`` supports
 
-- Read from environment variables: Configuration can be easily
-  overridden with environment variables.
+- multiple configuration file formats: INI, JSON, TOML, and YAML;
 
-- Read from command-line arguments: Configuration can be easily
-  overridden with ``ArgumentParser`` command-line arguments.
+- environment variables: Configuration can be easily overridden with
+  environment variables;
 
-- Dynamically reload configuration at run time: Watch functions can be
-  attached to any keys within the configuration, so that separate
-  resources can be reloaded and managed.
+- command-line arguments: Configuration can be easily overridden with
+  ArgumentParser command-line arguments.
 
-- Access nested configuration item with a “.”-delimited string key:
-  The underlying configuration data structure is nested dicts, but no
-  need to manually traverse or use the verbose
-  ``config["foo"]["bar"]`` form (can use ``config["foo.bar"]``
-  instead).
+- “.”-delimited nested keys: ``config["foo.bar"]`` is equivalent to
+  ``config["foo"]["bar"]``.
 
-- Apply schema (experimental): Type casting can be performed upon
-  loading configuration from files.
+The advanced usage of ``ResConfig`` allows:
+
+- Dynamic reloading of configuration at run time: Watch functions can
+  be attached to any keys within the configuration to trigger actions
+  to manage resources.
 
 For the full documentation, visit `documentation`_.
 
@@ -45,28 +43,35 @@ Installation
 Quickstart
 ==========
 
-``ResConfig`` is essentially a thin wrapper around nested ``dict``
-objects with added features that make it easy to deal with the data
-structure as a centralized storage of application configuration.
-
-
-The “.”-Style Key Access
-------------------------
-
-``ResConfig`` makes it easy to deal with nested configuration items by
-supporting the “.”-style notation for nested keys. For example, the
-following ways of setting the default configuration are the same.
+Let us first create an ``ResConfig`` object with a simple default
+configuration for your application, *myapp.py*:
 
 .. code-block:: python
 
-    from resconfig import ResConfig
+    from resconfig ResConfig
 
     config = ResConfig({"db": {"host": "localhost", "port": 5432}})
-    config = ResConfig({"db.host": "localhost", "db.port": 5432})
 
-The access to nested items are similarly easy. The following methods
-all return the same value, ``localhost``, given the ``config`` defined
-above:
+By default, ``ResConfig`` loads configuration immediately after its
+initialization. To control the timing of load, use the
+``load_on_init`` flag:
+
+.. code-block:: python
+
+    config = ResConfig({"db": {"host": "localhost", "port": 5432}},
+                       load_on_init=False)
+    config.load()
+
+The following sections introduce you to the basic usage of
+``ResConfig`` object.
+
+
+The “.”-Style Key Notation
+--------------------------
+
+``ResConfig`` exposes ``dict``-like interface for value access but
+additionally allows the “.”-style notation for nested keys. The
+following methods all return the same value, ``localhost``:
 
 .. code-block:: python
 
@@ -74,150 +79,103 @@ above:
     host = config["db.host"]
     host = config.get("db.host")  # similar to dict.get
 
-
-Use with Configuration Files
-----------------------------
-
-``ResConfig`` understands INI (*.ini*), JSON (*.json*), TOML
-(*.toml*), and YAML (*.yaml* or *.yml*); the file format is inferred
-from the extension. The filename with no extension is assumed to be of
-INI. Multiple config file paths can be supplied, and ``ResConfig``
-only reads from existing files and merge their configs:
-
-.. code-block:: python
-
-    config = ResConfig(config_files=["myconf.yml",
-                                     "~/.myconf.yml,
-                                     "/etc/myconf.yml"])
-
-In this case, if any of the files supplied exists, they are read in
-the reverse order, i.e., */etc/myconf.yml*, *~/.myconf.yml*, and
-*myconf.yml*, and merged in that order. This allows layered
-configuration based on specificity.
-
-
-Use with Environment Variables
-------------------------------
-
-Often, being able to override configuration with environment variables
-is desirable. ``ResConfig`` by default looks for environment variables
-that map to configuration keys.
-
-For the configuration items that exist by default, environment
-variables can override their values. Say your application, *myapp.py*
-has the following default configuration:
+The “.”-style can be used elsewhere, e.g.,
 
 .. code-block:: python
 
     config = ResConfig({"db.host": "localhost", "db.port": 5432})
 
-When you run this app with the ``DB_HOST`` and/or ``DB_PORT``
-environment variables set, their values override the default:
+This will be the same default configuration shown
+earlier. ``ResConfig`` takes care of nesting the ``dict`` for you.
+
+
+Use with Configuration Files
+----------------------------
+
+To read configuration from (multiple) files, supply a list of paths on
+object initialization:
+
+.. code-block:: python
+
+    config = ResConfig({"db.host": "localhost", "db.port": 5432},
+                       config_files=["myconf.yml",
+                                     "~/.myconf.yml,
+                                     "/etc/myconf.yml"])
+
+If any of the files exists, they are read in the reverse order, i.e.,
+*/etc/myconf.yml*, *~/.myconf.yml*, and then *myconf.yml*, and the
+configuration read from them get merged in that order, overriding the
+default. This allows layered configuration based on specificity by
+filesystem location.
+
+
+Use with Environment Variables
+------------------------------
+
+Properly named environment variables can override default
+configuration. When you run your *myapp.py* app with the ``DB_HOST``
+and/or ``DB_PORT`` environment variables set, their values override
+the default:
 
 .. code-block:: sh
 
-    $ DB_HOST=foo DB_PORT=3306 python myapp.py
+    $ DB_HOST=remotehost DB_PORT=3306 python myapp.py
 
 That is, ``config["db.host"]`` and ``config["db.port"]`` will return
-``foo`` and ``3306``, respectively. As a rule of thumb, a
+``remotehost`` and ``3306``, respectively. As a rule of thumb, a
 configuration key maps to an uppercased, “_”-delimited (when nested)
-environment variable name as in this example.
+environment variable name.
 
 
 Use with ArgumentParser
 -----------------------
 
-``argparse.ArgumentParser`` is a standard library tool to add
-command-line argument parsing to your application. ``ResConfig`` makes
-it easy to add command-line arguments to set configuration values.
-
-By default, the configuration is loaded immediately on the
-instantiation of ``ResConfig`` object. You can delay this by setting
-the ``load_on_init`` flag to ``False`` and load it yourself at an
-appropriate timing. Before loading, you can add arguments dynamically
-generated from the default configuration by supplying to the
-``ResConfig.add_arguments_to_argparse`` method the ``ArgumentParser``
-object, actually parse the arguments, and then calling calling the
-``ResConfig.prepare_from_argparse`` method to read the parse result
-into the configuration:
+A ``ResConfig`` object can dynamically generate
+``argparse.ArgumentParser`` arguments from default configuration:
 
 .. code-block:: python
-
-    config = ResConfig({"db.host": "localhost",
-                        "db.port": 5432},
-                       load_on_init=False)
 
     parser = argparse.ArgumentParser()
     parser.add_argument(...)  # Define other arguments
 
     config.add_arguments_to_argparse(parser)
-    args = parser.parse_args()
-    config.prepare_from_argparse(args)
-    config.load()
+    # --pg-host and --pg-port arguments are now available
 
-In this case, ``ResConfig.add_arguments_to_argparse`` adds
-``--db-host`` and ``--db-port`` as command-line arguments. As a rule
-of thumb, a nested key maps to a “-”-delimited long argument.
-
-Alternatively, you may manually define arguments, and let
-``ResConfig.prepare_from_argparse`` automatically pick them up, e.g.,
+After actually parsing the (command-line) arguments, pass the parse
+result to ``ResConfig`` and then load the configuration:
 
 .. code-block:: python
 
-    config = ResConfig({"db.host": "localhost",
-                        "db.port": 5432},
-                       load_on_init=False)
-
-    parser = argparse.ArgumentParser()
-    parser.add_argument(...)  # Define other arguments
-    parser.add_argument("--db-host", default="localhost")
-    parser.add_argument("--db-port", default=5432)
     args = parser.parse_args()
     config.prepare_from_argparse(args)
     config.load()
-
-Here, ``--db-host`` and ``--db-port`` are mapped to
-``config["db.host"]`` and ``config["db.port"]``.
 
 
 Adding Actions on Changes
 -------------------------
 
-The ``ResConfig`` object is aware of changes to its
-configuration. *Watch functions* can be registered to watch changes
-happening at any nested key to act on them. For example,
+A ``ResConfig`` object is aware of changes to its
+configuration. *Watch functions* watch changes happening at any nested
+key to act on them:
 
 .. code-block:: python
 
-    import signal
-    from resconfig import Action, ResConfig
+    from resconfig import Action
 
-    config = ResConfig(load_on_init=False)
-
-    @config.watch("nested.key")
+    @config.watch("db.host")
     def act_on_nested_key(action, old, new):
         if action == Action.ADDED:
-            # Act on the addition of a new value
+            # db.host added
         elif action == Action.MODIFIED:
-            # Act on modification of the value
+            # db.host modified
         elif action == Action.RELOADED:
-            # Act on reloading of the value
+            # db.host reloaded
         elif action == Action.REMOVED:
-            # Act on the removal of the value
+            # db.host removed
 
-    def reload(signum=None, stack_frame=None):
-        config.reload()
-
-    signal.signal(signal.SIGHUP, reload)  # run reload on SIGHUP
-
-    config.load()  # ready to do the initial config loading
-
-Here, the ``act_on_nested_key`` function is called whenever a change
-occurs at the ``nested.key`` in the configuration and can decide what
-to do with the ``old`` and/or ``new`` values. In this code, the
-configuration reload function is also a handler for the ``SIGHUP``
-signal and is triggered when the process receives it, for example,
-with ``kill -SIGHUP <pid>``.
+Here, the ``act_on_nested_key`` function is called whenever
+configuration changes occur at ``db.host`` and can decide what to do
+with the ``old`` and/or ``new`` values.
 
 
 Development
