@@ -1,9 +1,9 @@
+from ..ondict import ONDict
+
 try:
     import yaml
 except ImportError:
     yaml = None
-
-from ..ondict import ONDict
 
 
 def dump(data, stream, **kwargs):

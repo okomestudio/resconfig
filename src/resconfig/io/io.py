@@ -1,53 +1,19 @@
 from copy import deepcopy
-from enum import Enum
-from pathlib import Path
 
 from ..ondict import ONDict
 from ..typing import FilePath
 from ..typing import List
-from ..typing import NewType
-from ..typing import Optional
 from ..utils import experimental
-from . import ini
-from . import json
-from . import toml
-from . import yaml
+from .paths import ConfigPath
+from .paths import INIPath
+from .paths import JSONPath
+from .paths import TOMLPath
+from .paths import YAMLPath
 from .utils import ensure_path
 
 
-class FileType(Enum):
-    ini = 1
-    json = 2
-    toml = 3
-    yaml = 4
-
-
-FileTypes = NewType("FileTypes", FileType)
-
-
-def _suffix_to_filetype(filename: FilePath) -> FileType:
-    filetype = {
-        ".ini": FileType.ini,
-        ".json": FileType.json,
-        ".toml": FileType.toml,
-        ".yaml": FileType.yaml,
-        ".yml": FileType.yaml,
-    }.get(Path(filename).suffix, FileType.ini)
-    return filetype
-
-
-def _read_as_dict(filename: FilePath, filetype: Optional[FileTypes] = None) -> ONDict:
-    if filetype is None:
-        filetype = _suffix_to_filetype(filename)
-    load = {
-        FileType.ini: ini.load,
-        FileType.json: json.load,
-        FileType.toml: toml.load,
-        FileType.yaml: yaml.load,
-    }.get(filetype, ini.load)
-    with open(filename) as f:
-        loaded = load(f)
-    return ONDict(loaded)
+def _read_as_dict(filename: ConfigPath) -> ONDict:
+    return ONDict(filename.load())
 
 
 def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDict:
@@ -71,6 +37,8 @@ def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDic
     for path in paths:
         path = ensure_path(path)
         if path.is_file():
+            if not isinstance(path, ConfigPath):
+                path = ConfigPath.from_extension(path)
             content = _read_as_dict(path)
             d.merge(content)
             if not merge:
@@ -96,45 +64,38 @@ class IO:
         """
         self.update(read_from_files_as_dict(paths, merge))
 
-    def __update_from_file(self, filename: FilePath, filetype: FileType):
-        self.update(_read_as_dict(filename, filetype))
+    def __update_from_file(self, filename: ConfigPath):
+        self.update(_read_as_dict(filename))
 
     def update_from_file(self, filename: FilePath):
         """Update config from the file.
 
         The file type is inferred from the filename extension.
         """
-        self.__update_from_file(filename, _suffix_to_filetype(filename))
+        if not isinstance(filename, ConfigPath):
+            filename = ConfigPath.from_extension(filename)
+        self.__update_from_file(filename)
 
     def update_from_ini(self, filename: FilePath):
         """Update config from the INI file."""
-        self.__update_from_file(filename, FileType.ini)
+        self.__update_from_file(INIPath(filename))
 
     def update_from_json(self, filename: FilePath):
         """Update config from the JSON file."""
-        self.__update_from_file(filename, FileType.json)
+        self.__update_from_file(JSONPath(filename))
 
     def update_from_toml(self, filename: FilePath):
         """Update config from the TOML file."""
-        self.__update_from_file(filename, FileType.toml)
+        self.__update_from_file(TOMLPath(filename))
 
     def update_from_yaml(self, filename: FilePath):
         """Update config from the YAML file."""
-        self.__update_from_file(filename, FileType.yaml)
+        self.__update_from_file(YAMLPath(filename))
 
-    def __save(self, filename: FilePath, filetype: Optional[FileType] = None):
-        dump = {
-            FileType.ini: ini.dump,
-            FileType.json: json.dump,
-            FileType.toml: toml.dump,
-            FileType.yaml: yaml.dump,
-        }.get(filetype, ini.dump)
-
+    def __save(self, filename: ConfigPath):
         d = deepcopy(self._conf)
         self._schema.unapply_all(d)
-
-        with open(filename, "w") as f:
-            dump(d, f)
+        filename.dump(d)
 
     @experimental
     def save_to_file(self, filename: FilePath):
@@ -142,24 +103,26 @@ class IO:
 
         The file type is inferred from the filename extension.
         """
-        self.__save(filename, _suffix_to_filetype(filename))
+        if not isinstance(filename, ConfigPath):
+            filename = ConfigPath.from_extension(filename)
+        self.__save(filename)
 
     @experimental
     def save_to_ini(self, filename: FilePath):
         """Save config to the INI file."""
-        self.__save(filename, FileType.ini)
+        self.__save(INIPath(filename))
 
     @experimental
     def save_to_json(self, filename: FilePath):
         """Save config to the JSON file."""
-        self.__save(filename, FileType.json)
+        self.__save(JSONPath(filename))
 
     @experimental
     def save_to_toml(self, filename: FilePath):
         """Save config to the TOML file."""
-        self.__save(filename, FileType.toml)
+        self.__save(TOMLPath(filename))
 
     @experimental
     def save_to_yaml(self, filename: FilePath):
         """Save config to the YAML file."""
-        self.__save(filename, FileType.yaml)
+        self.__save(YAMLPath(filename))

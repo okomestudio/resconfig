@@ -5,28 +5,12 @@ from tempfile import NamedTemporaryFile
 from unittest import mock
 
 import pytest
+
 from resconfig import ResConfig
-from resconfig.io.io import FileType
 from resconfig.io.io import _read_as_dict
-from resconfig.io.io import _suffix_to_filetype
+from resconfig.io.paths import ConfigPath
 
 from ..test_resconfig import TestCase
-
-
-class TestSuffixToFiletype:
-    @pytest.mark.parametrize(
-        "name, filetype",
-        [
-            ("a", FileType.ini),
-            ("a.ini", FileType.ini),
-            ("a.json", FileType.json),
-            ("a.toml", FileType.toml),
-            ("a.yaml", FileType.yaml),
-            ("a.yml", FileType.yaml),
-        ],
-    )
-    def test(self, name, filetype):
-        assert _suffix_to_filetype(name) == filetype
 
 
 class TestReadAsDict:
@@ -34,7 +18,7 @@ class TestReadAsDict:
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
         conf.save_to_file(filename)
-        content = _read_as_dict(filename)
+        content = _read_as_dict(ConfigPath.from_extension(filename))
         assert isinstance(content, dict)
         assert content == expected
 
@@ -51,10 +35,10 @@ class TestIO(TestCase):
 
     def test_with_suffix(self, filename):
         conf = ResConfig()
-        with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
+        with mock.patch("resconfig.io.io.ConfigPath.from_extension") as func:
             conf.save_to_file(filename)
         func.assert_called_with(filename)
-        with mock.patch("resconfig.io.io._suffix_to_filetype") as func:
+        with mock.patch("resconfig.io.io.ConfigPath.from_extension") as func:
             conf.update_from_file(filename)
         func.assert_called_with(filename)
 
