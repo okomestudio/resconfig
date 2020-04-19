@@ -80,7 +80,7 @@ class CLArgs:
                 k = ".".join(i.replace(".", r"\.") for i in k.split("_"))
                 if prefix and k.startswith(prefix):
                     k = k[len(prefix) + 1 :]
-            if k in self._default:
+            if k in self._default and v is not None:
                 conf.merge(ONDict({k: v}))
 
         self._clargs = conf
