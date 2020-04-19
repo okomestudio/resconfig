@@ -28,7 +28,7 @@ class TestCLArgs:
     def test_add_arguments_to_argparse_to_default(self, default_value):
         self.default["foo"][r"ba\.r"]["baz"] = default_value
         args = self._parse()
-        assert getattr(args, "foo_ba.r_baz") == default_value
+        assert getattr(args, "foo_ba.r_baz") is None
 
     @pytest.mark.parametrize("default_value", [1, "str"])
     def test_add_arguments_to_argparse_to_arg(self, default_value):
@@ -39,8 +39,8 @@ class TestCLArgs:
 
     @pytest.mark.parametrize("clargs", [[], ["--prefix-foo-ba.r-baz", "bar"]])
     def test_add_arguments_to_argparse_with_prefix(self, clargs):
-        expected = clargs[1] if clargs else "foo"
-        self.default["foo"][r"ba\.r"]["baz"] = expected
+        expected = clargs[1] if clargs else None
+        self.default["foo"][r"ba\.r"]["baz"] = "foo"
         args = self._parse(clargs, prefix="prefix")
         assert getattr(args, "prefix_foo_ba.r_baz") == expected
 

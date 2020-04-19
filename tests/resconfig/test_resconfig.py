@@ -103,6 +103,17 @@ class TestPrepareConfig:
         assert result["foo.bar.baz"] == getattr(args, "foo_bar_baz")
         assert result[r"foo.ba\.r.baz"] == getattr(args, "foo_ba.r_baz")
 
+    def test_clargs_overriding_env(self, monkeypatch):
+        rc = ResConfig(self.default)
+        args = Namespace()
+        args.__dict__ = {"foo_bar_baz": None, "foo_ba.r_baz": "from_clarg"}
+        monkeypatch.setenv("FOO_BAR_BAZ", "from_env")
+        monkeypatch.setenv("FOO_BA_R_BAZ", "from_env")
+        rc.prepare_from_argparse(args)
+        result = rc._prepare_config()
+        assert result["foo.bar.baz"] == "from_env"
+        assert result[r"foo.ba\.r.baz"] == "from_clarg"
+
 
 class TestIndexAccess(TestCase):
     def test(self):

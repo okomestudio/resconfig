@@ -31,10 +31,9 @@ class CLArgs:
         ignore = ignore or set()
         for key in self._default.allkeys():
             if ".".join(key) not in ignore:
-                default = self._default[key]
                 key = (prefix,) + key if prefix else key
                 longopt = "--" + "-".join(k.replace(r"\.", ".") for k in key)
-                parser.add_argument(longopt, default=default)
+                parser.add_argument(longopt, default=None)
 
     def prepare_from_argparse(
         self,

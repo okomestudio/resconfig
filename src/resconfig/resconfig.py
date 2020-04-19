@@ -115,7 +115,7 @@ class ResConfig(Watchable, IO, CLArgs):
             if envkey in env:
                 new[key] = env[envkey]
 
-            if key in clargs:
+            if key in clargs and clargs[key] is not None:
                 new[key] = clargs[key]
 
         return new
