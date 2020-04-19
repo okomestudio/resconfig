@@ -114,9 +114,13 @@ class ResConfig(Watchable, IO, CLArgs):
             )
             if envkey in env:
                 new[key] = env[envkey]
+                log.debug(
+                    "Config item '%s' set from environment variable (%s)", key, envkey
+                )
 
             if key in clargs and clargs[key] is not None:
                 new[key] = clargs[key]
+                log.debug("Config item '%s' set from command-line", key)
 
         return new
 
