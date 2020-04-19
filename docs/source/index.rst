@@ -21,6 +21,10 @@ User's Guide
    intro
    installation
    quickstart
+   nested_keys
+   config_files
+   envvars
+   argparse
    watch_functions
 
 
