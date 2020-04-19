@@ -1,4 +1,5 @@
 from functools import wraps
+from logging import getLogger
 
 from .actions import Action
 from .ondict import ONDict
@@ -8,6 +9,8 @@ from .typing import Key
 from .typing import List
 from .typing import Optional
 from .typing import WatchFunction
+
+log = getLogger(__name__)
 
 
 class Watchers(ONDict):
@@ -22,11 +25,13 @@ class Watchers(ONDict):
         if func is None:
             if self.__watcher_key in ref:
                 del ref[self.__watcher_key]
+                log.debug("Deregistered all watch functions for %s", key)
         else:
             if self.__watcher_key not in ref:
                 raise KeyError(f"Watch functions not registered for {key}")
             try:
                 ref[self.__watcher_key].remove(func)
+                log.debug("Deregistered watch function %r for %s", func, key)
             except ValueError:
                 raise ValueError(f"{func!r} not registered for {key}")
             # If this was the last watch function, remove the node.
@@ -38,6 +43,7 @@ class Watchers(ONDict):
         self.setdefault(key, self.__class__()).setdefault(
             self.__watcher_key, []
         ).append(func)
+        log.debug("Registered watch function %r for %s", func, key)
 
     def exists(self, key: Key) -> bool:
         """Test if any watch function exists for the key."""
