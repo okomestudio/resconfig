@@ -1,6 +1,9 @@
 Unreleased
 ----------
 
+20.4.3a (April 19, 2020)
+------------------------
+
 Added:
 
 - Allow file formats to be hinted by wrapping as ConfigPath objects
