@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+#
+# Release script
+#
+
+set -e
+
+
+function get_hdash() {
+  local length=$1
+  local line=""
+  for (( i = 0; i < "$length"; i++)); do
+    line="-$line"
+  done
+  echo $line
+}
+
+
+function changelog() {
+  local path=CHANGELOG.rst
+  local ver=$1
+
+  local line="$ver ($(date +'%B %d, %Y'))"
+  local hdash=$(get_hdash "${#line}")
+  local pattern="Unreleased\\n----------\\n"
+
+  sed -i -z "s/$pattern/$pattern\\n$line\\n$hdash\\n/" $path
+}
+
+
+function package() {
+  local path=src/resconfig/__init__.py
+  local ver=$1
+
+  local key="__version__"
+
+  sed -i -E -z "s/\\n$key = \"[\.a-z0-9]+\"\\n/\\n$key = \"$ver\"\\n/" $path
+}
+
+
+function prompt() {
+  local msg=$1
+  local abort="${2:-Aborted!}"
+
+  read -p "$msg [y/N]: " resp
+  resp=${resp:-n}
+  if [[ $resp == "N" ]] || [[ $resp == "n" ]]; then
+    >&2 echo "$abort"
+    exit 1
+  fi
+}
+
+
+function main() {
+  version=$1
+
+  changelog "$version"
+  package "$version"
+
+  git status
+
+  prompt "Ready to commit ALL (both tracked and untracked) files?" \
+         "Commit aborted!"
+
+  git add .
+  git commit -m "Version $version"
+  git push origin
+
+  prompt "Ready to create a release tag?" \
+         "Release aborted!"
+
+  git tag -a "v$version" -m "Version $version"
+  git push origin "v$version"
+}
+
+
+main "$1"
