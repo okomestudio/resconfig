@@ -1,9 +1,10 @@
-import io
+from io import StringIO
 
 import pytest
 
-from resconfig.io.ini import dump
-from resconfig.io.ini import load
+from resconfig.io import ini
+
+from .bases import BaseTestLoad
 
 content = """
 [DEFAULT]
@@ -27,23 +28,24 @@ foo.bar = baz
 
 @pytest.fixture
 def stream():
-    yield io.StringIO(content)
+    yield StringIO(content)
 
 
 @pytest.fixture
 def loaded(stream):
-    yield load(stream)
+    yield ini.load(stream)
 
 
 @pytest.fixture
-def dumped(loaded):
-    stream = io.StringIO()
-    dump(loaded, stream)
+def dumped(loaded, stream):
+    ini.dump(loaded, stream)
     stream.seek(0)
     yield stream.read()
 
 
-class TestLoad:
+class TestLoad(BaseTestLoad):
+    module = ini
+
     def test_default_pass_through(self, loaded):
         assert loaded[r"bitbucket\.org"]["serveraliveinterval"] == "45"
 

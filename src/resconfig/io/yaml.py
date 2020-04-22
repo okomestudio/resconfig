@@ -21,4 +21,5 @@ def dump(data, stream, **kwargs):
 
 
 def load(stream, **kwargs):
-    return yaml.load(stream, yaml.FullLoader, **kwargs)
+    content = yaml.load(stream, yaml.FullLoader, **kwargs)
+    return content if content else {}

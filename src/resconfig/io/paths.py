@@ -21,12 +21,7 @@ class ConfigPath(type(Path())):
 
     def load(self):
         with open(self) as f:
-            try:
-                content = self.module.load(f) or {}
-            except Exception:
-                log.exception("Error occured loading from %s; assume empty...", self)
-                content = {}
-            return content
+            return self.module.load(f)
 
     @classmethod
     def from_extension(cls, filename: FilePath) -> "ConfigPath":

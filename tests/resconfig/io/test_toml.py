@@ -1,12 +1,13 @@
-import io
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
+from io import StringIO
 
 import pytest
 
-from resconfig.io.toml import dump
-from resconfig.io.toml import load
+from resconfig.io import toml
+
+from .bases import BaseTestLoad
 
 content = """
 title = "TOML Example"
@@ -46,23 +47,24 @@ nested.key.example = "foobar"
 
 @pytest.fixture
 def stream():
-    yield io.StringIO(content)
+    yield StringIO(content)
 
 
 @pytest.fixture
 def loaded(stream):
-    yield load(stream)
+    yield toml.load(stream)
 
 
 @pytest.fixture
-def dumped(loaded):
-    stream = io.StringIO()
-    dump(loaded, stream)
+def dumped(loaded, stream):
+    toml.dump(loaded, stream)
     stream.seek(0)
     yield stream.read()
 
 
-class TestLoad:
+class TestLoad(BaseTestLoad):
+    module = toml
+
     def test_no_section(self, loaded):
         assert loaded["title"] == "TOML Example"
 
