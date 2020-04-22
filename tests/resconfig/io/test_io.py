@@ -1,16 +1,17 @@
 import os
 from contextlib import contextmanager
-from pathlib import Path
 from tempfile import NamedTemporaryFile
-from unittest import mock
+from unittest.mock import patch
 
 import pytest
 
 from resconfig import ResConfig
 from resconfig.io.io import _read_as_dict
 from resconfig.io.paths import ConfigPath
-
-from ..test_resconfig import TestCase
+from resconfig.io.paths import INIPath
+from resconfig.io.paths import JSONPath
+from resconfig.io.paths import TOMLPath
+from resconfig.io.paths import YAMLPath
 
 
 class TestReadAsDict:
@@ -23,7 +24,11 @@ class TestReadAsDict:
         assert content == expected
 
 
-class TestIO(TestCase):
+class Base:
+    filetype = None
+    filename_suffix = None
+    config_path_type = ConfigPath
+
     @contextmanager
     def tempfile(self, suffix=""):
         f = NamedTemporaryFile(delete=False, suffix=suffix)
@@ -33,35 +38,58 @@ class TestIO(TestCase):
         finally:
             os.remove(filename)
 
-    def test_with_suffix(self, filename):
-        conf = ResConfig()
-        with mock.patch("resconfig.io.io.ConfigPath.from_extension") as func:
-            conf.save_to_file(filename)
-        func.assert_called_with(filename)
-        with mock.patch("resconfig.io.io.ConfigPath.from_extension") as func:
-            conf.update_from_file(filename)
-        func.assert_called_with(filename)
-
-
-class TestINI(TestIO):
-    ini_default = {"sec1": {"opt1": "2"}}
-
     @pytest.fixture
     def filename(self):
-        with self.tempfile(".ini") as filename:
+        with self.tempfile(self.filename_suffix) as filename:
             yield filename
 
-    def test(self, filename):
-        conf = ResConfig(self.ini_default)
-        conf.save_to_ini(filename)
-        with open(filename) as f:
-            content = f.read()
-        assert "[sec1]" in content
-
+    def test_IO__update_from_file(self, filename):
         conf = ResConfig()
-        conf.update_from_ini(filename)
-        assert "sec1.opt1" in conf
-        assert conf.get("sec1.opt1") == self.ini_default["sec1"]["opt1"]
+        path = self.config_path_type(filename)
+        with patch.object(conf, "update") as update:
+            conf._IO__update_from_file(path)
+            assert isinstance(update.call_args[0][0], dict)
+
+    def test_update_from_filetype(self, filename):
+        conf = ResConfig()
+        meth = getattr(conf, "update_from_" + self.filetype)
+        with patch("resconfig.ResConfig._IO__update_from_file") as update:
+            meth(filename)
+            assert type(update.call_args[0][0]) is self.config_path_type
+
+    def test_update_from_file_with_suffix(self, filename):
+        conf = ResConfig()
+        with patch("resconfig.ResConfig._IO__update_from_file") as update:
+            conf.update_from_file(filename)
+            update.assert_called_with(self.config_path_type(filename))
+            assert type(update.call_args[0][0]) is self.config_path_type
+
+    def test_IO__save(self, filename):
+        conf = ResConfig()
+        path = self.config_path_type(filename)
+        with patch.object(path, "dump") as dump:
+            conf._IO__save(path)
+            dump.assert_called_with(conf._conf)
+
+    def test_save_to_filetype(self, filename):
+        conf = ResConfig()
+        meth = getattr(conf, "save_to_" + self.filetype)
+        with patch("resconfig.ResConfig._IO__save") as save:
+            meth(filename)
+            assert type(save.call_args[0][0]) is self.config_path_type
+
+    def test_save_to_file_with_suffix(self, filename):
+        conf = ResConfig()
+        with patch("resconfig.ResConfig._IO__save") as save:
+            conf.save_to_file(filename)
+            save.assert_called_with(self.config_path_type(filename))
+            assert type(save.call_args[0][0]) is self.config_path_type
+
+
+class TestINI(Base):
+    filetype = "ini"
+    filename_suffix = ".ini"
+    config_path_type = INIPath
 
     def test_nested(self, filename):
         conf = ResConfig(
@@ -71,61 +99,19 @@ class TestINI(TestIO):
             conf.save_to_ini(filename)
 
 
-class TestJSON(TestIO):
-    @pytest.fixture
-    def filename(self):
-        with self.tempfile(".json") as filename:
-            yield filename
-
-    def test(self, filename):
-        conf = ResConfig(self.default, schema={"x2": (Path, str)})
-        conf.save_to_json(filename)
-        with open(filename) as f:
-            content = f.read()
-        assert '{"x1": 1' in content
-
-        conf = ResConfig()
-        conf.update_from_json(filename)
-        assert "x3.y1" in conf
-        assert conf.get("x3.y1") == self.default["x3"]["y1"]
+class TestJSON(Base):
+    filetype = "json"
+    filename_suffix = ".json"
+    config_path_type = JSONPath
 
 
-class TestTOML(TestIO):
-    @pytest.fixture
-    def filename(self):
-        with self.tempfile(".toml") as filename:
-            yield filename
-
-    def test(self, filename):
-        conf = ResConfig(self.default, schema={"x2": (Path, str)})
-        # conf = ResConfig(self.default)
-        conf.save_to_toml(filename)
-        with open(filename) as f:
-            content = f.read()
-        assert "x1 = 1" in content
-        assert "[x3.y3]\nz1 = 3" in content
-
-        conf = ResConfig()
-        conf.update_from_toml(filename)
-        assert "x3.y1" in conf
-        assert conf.get("x3.y1") == self.default["x3"]["y1"]
+class TestTOML(Base):
+    filetype = "toml"
+    filename_suffix = ".toml"
+    config_path_type = TOMLPath
 
 
-class TestYAML(TestIO):
-    @pytest.fixture
-    def filename(self):
-        with self.tempfile(".yaml") as filename:
-            yield filename
-
-    def test(self, filename):
-        conf = ResConfig(self.default, schema={"x2": (Path, str)})
-        # conf = ResConfig(self.default)
-        conf.save_to_yaml(filename)
-        with open(filename) as f:
-            content = f.read()
-        assert "x1: 1" in content
-
-        conf = ResConfig()
-        conf.update_from_yaml(filename)
-        assert "x3.y1" in conf
-        assert conf.get("x3.y1") == self.default["x3"]["y1"]
+class TestYAML(Base):
+    filetype = "yaml"
+    filename_suffix = ".yaml"
+    config_path_type = YAMLPath
