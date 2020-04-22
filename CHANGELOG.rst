@@ -1,13 +1,23 @@
 Unreleased
 ----------
 
+Added:
+
+- Documentation for using :class:`.ConfigPath` objects to specify file
+  types (`#20`_)
+
+
+.. _#20: https://github.com/okomestudio/resconfig/issues/20
+
+
 Fixed:
 
 - Reading from an empty JSON/YAML file results in load error
-  (`2fc94fa`_).
+  (`2fc94fa`_, `1346f3f`_).
 
 
 .. _2fc94fa: https://github.com/okomestudio/resconfig/commit/2fc94fa6adb9a73e5078d1bedeb9f905f4953aa5
+.. _1346f3f: https://github.com/okomestudio/resconfig/commit/1346f3fe27795903a1843720934a85eccb297c5c
 
 
 20.4.3a (April 19, 2020)
