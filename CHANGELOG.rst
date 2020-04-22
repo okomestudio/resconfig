@@ -1,6 +1,15 @@
 Unreleased
 ----------
 
+Fixed:
+
+- Reading from an empty JSON/YAML file results in load error
+  (`2fc94fa`_).
+
+
+.. _2fc94fa: https://github.com/okomestudio/resconfig/commit/2fc94fa6adb9a73e5078d1bedeb9f905f4953aa5
+
+
 20.4.3a (April 19, 2020)
 ------------------------
 
