@@ -144,6 +144,10 @@ class ResConfig(Watchable, IO, CLArgs):
         """Load the prepared config."""
         self.replace(self._prepare_config())
 
+    def unload(self):
+        """Empty the configuration."""
+        self.replace(ONDict())
+
     def __update(
         self, key: Tuple[str], conf: dict, newconf: dict, replace: bool = False
     ) -> Tuple[Action, Any, Any]:

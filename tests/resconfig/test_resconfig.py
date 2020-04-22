@@ -62,6 +62,18 @@ class TestBasicAPI(TestCase):
         assert isinstance(result, dict)
         assert rc._conf == result
 
+    def test_load(self):
+        conf = ResConfig(self.default, load_on_init=False)
+        assert conf._conf == {}
+        conf.load()
+        assert conf._conf == self.default
+
+    def test_unload(self):
+        conf = ResConfig(self.default)
+        assert conf._conf == self.default
+        conf.unload()
+        assert conf._conf == {}
+
 
 class TestPrepareConfig:
     @pytest.fixture(autouse=True)
