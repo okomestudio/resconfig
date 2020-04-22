@@ -51,3 +51,33 @@ errors.
 
 The “``~``” character in file paths will be expanded to the path
 defined in the ``HOME`` environment variable.
+
+
+File Types
+----------
+
+:class:`.ResConfig` understands the following file formats:
+
+- INI (`.ini`)
+- JSON (`.json`)
+- TOML (`.toml`)
+- YAML (`.yaml` or `.yml`)
+
+with the given filename extensions.
+
+By default, a filename without extension is assumed to be of INI
+type. If you wish to explicitly specify file type, you may do so using
+a :class:`.ConfigPath` subclass as follows:
+
+.. code-block:: python
+
+   from resconfig.io.paths import YAMLPath
+
+   config = ResConfig(config_files=[YAMLPath("myconf"),
+                                    YAMLPath("~/.myconf),
+                                    YAMLPath("/etc/myconf")])
+
+This way, all the files are considered to be of YAML type, regardless
+of extension. :class:`.ResConfig` supplies :class:`.INIPath`,
+:class:`.JSONPath`, :class:`TOMLPath`, and :class:`YAMLPath` for this
+purpose.
