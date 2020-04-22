@@ -1,3 +1,4 @@
+from logging import getLogger
 from pathlib import Path
 
 from ..typing import FilePath
@@ -5,6 +6,8 @@ from . import ini
 from . import json
 from . import toml
 from . import yaml
+
+log = getLogger(__name__)
 
 
 class ConfigPath(type(Path())):
@@ -18,7 +21,12 @@ class ConfigPath(type(Path())):
 
     def load(self):
         with open(self) as f:
-            return self.module.load(f)
+            try:
+                content = self.module.load(f) or {}
+            except Exception:
+                log.exception("Error occured loading from %s; assume empty...", self)
+                content = {}
+            return content
 
     @classmethod
     def from_extension(cls, filename: FilePath) -> "ConfigPath":
