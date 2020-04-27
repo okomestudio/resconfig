@@ -22,7 +22,8 @@ ForwardX11 = no
 
 [extras section]
 Key : Value
-foo.bar = baz
+foo.bar = baz qux
+dt = 2020-01-02T20:00:00.000000
 """
 
 
@@ -37,8 +38,22 @@ def loaded(stream):
 
 
 @pytest.fixture
-def dumped(loaded, stream):
-    ini.dump(loaded, stream)
+def cast(loaded):
+    from dateutil.parser import parse
+
+    loaded["extras section"]["dt"] = parse(loaded["extras section"]["dt"])
+    yield loaded
+
+
+@pytest.fixture
+def dumped(cast, stream):
+    from resconfig.ddefs import datetime_
+    from datetime import datetime
+    from resconfig.ondict import ONDict
+
+    ini.dump(
+        cast, stream, ONDict({"extras section": {"dt": datetime_(datetime.now())}})
+    )
     stream.seek(0)
     yield stream.read()
 
@@ -60,6 +75,7 @@ class TestLoad(BaseTestLoad):
 
     def test_string(self, loaded):
         assert loaded[r"bitbucket\.org"]["user"] == "hg"
+        assert loaded[r"extras section"][r"foo\.bar"] == "baz qux"
 
     def test_bool(self, loaded):
         assert loaded[r"bitbucket\.org"]["compression"] == "yes"
@@ -78,6 +94,9 @@ class TestDump:
 
     def test_integer(self, dumped):
         assert "compressionlevel = 9" in dumped
+
+    def test_datetime(self, dumped):
+        assert "dt = 2020-01-02T20:00:00.000000" in dumped
 
     def test_boolean(self, dumped):
         assert "compression = yes" in dumped

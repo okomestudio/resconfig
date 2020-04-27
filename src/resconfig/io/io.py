@@ -93,9 +93,7 @@ class IO:
         self.__update_from_file(YAMLPath(filename))
 
     def __save(self, filename: ConfigPath):
-        d = deepcopy(self._conf)
-        self._schema.unapply_all(d)
-        filename.dump(d)
+        filename.dump(self)
 
     @experimental
     def save_to_file(self, filename: FilePath):

@@ -113,6 +113,17 @@ class ONDict(OrderedDict):
     def merge(self, d):
         merge(self, d)
 
+    def __asdict(self, d):
+        if not isinstance(d, MutableMapping):
+            return d
+        result = {}
+        for k in d.keys():
+            result[k] = self.__asdict(d[k])
+        return result
+
+    def asdict(self) -> dict:
+        return self.__asdict(self)
+
 
 def _expand_args(args, kwargs):
     if args:

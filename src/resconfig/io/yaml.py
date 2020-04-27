@@ -6,7 +6,7 @@ except ImportError:
     yaml = None
 
 
-def dump(data, stream, **kwargs):
+def dump(data, stream, spec=None, **kwargs):
     class _Dumper(yaml.Dumper):
         pass
 

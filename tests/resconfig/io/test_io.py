@@ -69,7 +69,7 @@ class Base:
         path = self.config_path_type(filename)
         with patch.object(path, "dump") as dump:
             conf._IO__save(path)
-            dump.assert_called_with(conf._conf)
+            dump.assert_called_with(conf)
 
     def test_save_to_filetype(self, filename):
         conf = ResConfig()

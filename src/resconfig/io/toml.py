@@ -9,5 +9,5 @@ def load(f):
     return _load(f.read())
 
 
-def dump(content, f):
+def dump(content, f, spec=None):
     f.write(_dump(dict(content)))

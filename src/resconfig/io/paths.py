@@ -15,11 +15,11 @@ class ConfigPath(type(Path())):
 
     module = None
 
-    def dump(self, content):
+    def dump(self, rc: "ResConfig"):
         with open(self, "w") as f:
-            self.module.dump(content, f)
+            self.module.dump(rc._conf, f, spec=rc._default)
 
-    def load(self):
+    def load(self) -> "ONDict":
         with open(self) as f:
             return self.module.load(f)
 

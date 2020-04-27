@@ -3,7 +3,7 @@ from json import load as _load
 from json.decoder import JSONDecodeError
 
 
-def dump(content, f):
+def dump(content, f, spec=None):
     return _dump(content, f)
 
 

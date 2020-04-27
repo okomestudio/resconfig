@@ -1,13 +1,15 @@
 from collections.abc import MutableMapping
 from configparser import ConfigParser
 
+from ..ddefs import ddef
+from ..ondict import ONDict
 from ..typing import IO
 
 
 def load(f: IO) -> dict:
     parser = ConfigParser()
     parser.read_file(f)
-    dic = {}
+    dic = ONDict()
     for section in parser.sections():
         ref = dic.setdefault(_escape_dot(section), {})
         for option in parser[section]:
@@ -15,15 +17,31 @@ def load(f: IO) -> dict:
     return dic
 
 
-def dump(content: dict, f: IO):
+def dump(content: ONDict, f: IO, spec=None):
     if _depth(content) > 2:
         raise ValueError("INI config does not allow nested options")
+
+    content = _make_dumpable(content, spec or {})
 
     _unescape_all_keys(content)
 
     parser = ConfigParser()
     parser.read_dict(content)
     parser.write(f)
+
+
+def _make_dumpable(content, spec) -> dict:
+    con = ONDict()
+    con._create = True
+    for key in list(content.allkeys()):
+        con[key] = _to_dumpable(content[key], spec.get(key))
+    return con.asdict()
+
+
+def _to_dumpable(value, from_spec):
+    if isinstance(from_spec, ddef):
+        value = str(value)
+    return value
 
 
 def _escape_dot(key: str) -> str:

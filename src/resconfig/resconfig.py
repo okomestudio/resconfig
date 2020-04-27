@@ -6,6 +6,8 @@ from logging import getLogger
 
 from .actions import Action
 from .clargs import CLArgs
+from .ddefs import ddef
+from .ddefs import extract_values
 from .io import IO
 from .io.io import read_from_files_as_dict
 from .io.utils import ensure_path
@@ -13,7 +15,6 @@ from .ondict import ONDict
 from .ondict import flexdictargs
 from .ondict import isdict
 from .ondict import merge
-from .schema import Schema
 from .typing import Any
 from .typing import Dict
 from .typing import FilePath
@@ -48,7 +49,6 @@ class ResConfig(Watchable, IO, CLArgs):
         load_on_init: :obj:`True` to load config on instantiation, :obj:`False` to skip.
         merge_config_files: :obj:`True` to merge all configs from existing files,
             :obj:`False` to read only the config from the first existing file.
-        schema: *Experimental:* Config schema.
         watchers: Config watchers.
     """
 
@@ -59,7 +59,6 @@ class ResConfig(Watchable, IO, CLArgs):
         envvar_prefix: str = "",
         load_on_init: bool = True,
         merge_config_files: bool = True,
-        schema: Optional[dict] = None,
         watchers: Optional[Dict[Key, List[WatchFunction]]] = None,
     ):
         self._default = ONDict(default or {})
@@ -69,7 +68,6 @@ class ResConfig(Watchable, IO, CLArgs):
         self._envvar_prefix = envvar_prefix
         self._clargs = ONDict()
         self._merge_config_files = merge_config_files
-        self._schema = Schema(schema or {})
         self._watchers = Watchers()
         for k, v in (watchers or {}).items():
             for func in v if isinstance(v, Iterable) else [v]:
@@ -99,7 +97,7 @@ class ResConfig(Watchable, IO, CLArgs):
         Returns:
              An :class:`~resconfig.ondict.ONDict` object.
         """
-        new = deepcopy(self._default)
+        new = deepcopy(extract_values(self._default))
 
         if self._config_files:
             new.merge(
@@ -170,7 +168,15 @@ class ResConfig(Watchable, IO, CLArgs):
         _key = key[-1]
 
         if not isdict(newconf[_key]):
-            newval = self._schema.apply(key[1:], newconf[_key])
+            if key[1:] in self._default:
+                vt = self._default[key[1:]]
+                if isinstance(vt, ddef):
+                    newval = vt.cast(newconf[_key])
+                else:
+                    newval = newconf[_key]
+            else:
+                newval = newconf[_key]
+
             action = None
             if not isdict(conf):
                 oldval = Flag.MISSING
@@ -270,4 +276,4 @@ class ResConfig(Watchable, IO, CLArgs):
 
     def reset(self):
         """Reset config to default."""
-        self.replace(deepcopy(self._default))
+        self.replace(deepcopy(extract_values(self._default)))
