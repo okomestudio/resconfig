@@ -18,8 +18,8 @@ class ONDict(OrderedDict):
     _create = None
 
     def __init__(self, *args, **kwargs):
-        args, kwargs = _expand_args(args, kwargs)
-        super().__init__(*args, **kwargs)
+        super().__init__()
+        self.merge(*args, **kwargs)
 
     def __repr__(self):
         items = []
@@ -78,14 +78,37 @@ class ONDict(OrderedDict):
         return (super() if ref is self else ref).setdefault(lastkey, default)
 
     def update(self, *args, **kwargs):
-        args, kwargs = _expand_args(args, kwargs)
+        """Update from dict and/or iterable.
+
+        This method takes in the same argument(s) as :meth:`dict.update`. Compared to
+        the built-in :class:`dict` object, the update behavior is expanded to allow
+        nested key notation.
+
+        Note that update happens only on the top-level keys, just like built-in
+        :class:`dict`, to supply consistent behavior. If you desire a full merging
+        behavior, use :meth:`ONDict.merge`.
+
+        Raises:
+            TypeError: When more than one positional argument is supplied.
+            ValueError: When the iterable does not hold two-element items.
+        """
         if args:
             if len(args) != 1:
                 raise TypeError(f"update expected at most 1 argument, got {len(args)}")
-            for k, v in args[0].items():
-                self[k] = v
+            arg = args[0]
+            if hasattr(arg, "keys"):
+                super().update(normalize(arg))
+            else:
+                try:
+                    for k, v in arg:
+                        super().update(normalize({k: v}))
+                except Exception:
+                    raise ValueError(
+                        "dictionary update sequence element #0 has length "
+                        f"{ len(arg[0]) }; 2 is required"
+                    )
         for k in kwargs:
-            self[k] = kwargs[k]
+            super().update(normalize({k: kwargs[k]}))
 
     @classmethod
     def fromkeys(cls, iterable, value=None):
@@ -110,21 +133,35 @@ class ONDict(OrderedDict):
         for key in self.__allkeys(("__ROOT__",), {"__ROOT__": self}):
             yield ".".join(key) if as_str else key
 
-    def merge(self, d):
-        merge(self, d)
+    def merge(self, *args, **kwargs):
+        """Merge from dict and/or iterable.
 
+        This method takes in the same argument(s) as :meth:`dict.update`, but merge the
+        input instead of :class:`dict`-like update. Merging extends the update behavior
+        to allow nested updates and to support nested key notation.
 
-def _expand_args(args, kwargs):
-    if args:
-        arg = args[0]
-        if hasattr(arg, "keys"):
-            new = normalize(arg)
-        else:
-            new = ONDict()
-            for key, val in arg:
-                new = merge(new, normalize({key: val}))
-        args = [new] + list(args[1:])
-    return args, normalize(kwargs)
+        Raises:
+            TypeError: When more than one positional argument is supplied.
+            ValueError: When the iterable does not hold two-element items.
+        """
+        if args:
+            if len(args) != 1:
+                raise TypeError(f"update expected at most 1 argument, got {len(args)}")
+            arg = args[0]
+            if hasattr(arg, "keys"):
+                for k, v in arg.items():
+                    merge(self, normalize({k: v}))
+            else:
+                try:
+                    for k, v in arg:
+                        merge(self, normalize({k: v}))
+                except Exception:
+                    raise ValueError(
+                        "dictionary update sequence element #0 has length "
+                        f"{ len(arg[0]) }; 2 is required"
+                    )
+        for k in kwargs:
+            merge(self, normalize({k: kwargs[k]}))
 
 
 def _key_error(obj, key):

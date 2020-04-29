@@ -15,6 +15,22 @@ class TestONDict:
     def d(self):
         yield ONDict(deepcopy(self.default))
 
+    def test_init_default(self):
+        d = ONDict()
+        assert d == {}
+
+    def test_init_mapping(self):
+        d = ONDict(self.default)
+        assert d == self.default
+
+    def test_init_iterable(self):
+        d = ONDict(((k, v) for k, v in self.default.items()))
+        assert d == self.default
+
+    def test_init_kwargs(self):
+        d = ONDict(**self.default)
+        assert d == self.default
+
     @pytest.mark.parametrize(
         "key, expected",
         [
@@ -164,6 +180,7 @@ class TestONDict:
         ],
     )
     def test_update(self, d, args, kwargs, expected):
+        # d = {"foo": {"bar": {"baz": 0}, "qux": "quux"}}
         d.update(*args, **kwargs)
         assert d == expected
 
@@ -194,6 +211,37 @@ class TestONDict:
     def test_allkeys(self, d):
         assert list(d.allkeys()) == [("foo", "bar", "baz"), ("foo", "qux")]
         assert list(d.allkeys(as_str=True)) == ["foo.bar.baz", "foo.qux"]
+
+    @pytest.mark.parametrize(
+        "args, kwargs, expected",
+        [
+            (({"bar": 3},), {}, {**default, **{"bar": 3}}),
+            (({"foo": 1, "bar.baz": 3},), {}, {"foo": 1, "bar": {"baz": 3}}),
+            (
+                ({"foo.baz.bar": 1},),
+                {},
+                {"foo": {"bar": {"baz": 0}, "qux": "quux", "baz": {"bar": 1}}},
+            ),
+            ([(("bar", 3),)], {}, {**default, **{"bar": 3}}),
+            ([(("foo", 1), ("bar.baz", 3))], {}, {"foo": 1, "bar": {"baz": 3}}),
+            (
+                [(("foo.baz.bar", 1),)],
+                {},
+                {"foo": {"bar": {"baz": 0}, "qux": "quux", "baz": {"bar": 1}}},
+            ),
+            ([], {"bar": 3}, {**default, **{"bar": 3}}),
+            ([], {"foo": 1, "bar.baz": 3}, {"foo": 1, "bar": {"baz": 3}}),
+            (
+                [],
+                {"foo.baz.bar": 1},
+                {"foo": {"bar": {"baz": 0}, "qux": "quux", "baz": {"bar": 1}}},
+            ),
+        ],
+    )
+    def test_merge(self, d, args, kwargs, expected):
+        # d = {"foo": {"bar": {"baz": 0}, "qux": "quux"}}
+        d.merge(*args, **kwargs)
+        assert d == expected
 
 
 class TestMerge:
