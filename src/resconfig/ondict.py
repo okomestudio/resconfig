@@ -110,6 +110,24 @@ class ONDict(OrderedDict):
         for key in self.__allkeys(("__ROOT__",), {"__ROOT__": self}):
             yield ".".join(key) if as_str else key
 
+    def __asdict(self, d):
+        if not isinstance(d, MutableMapping):
+            return d
+        result = {}
+        for k in d.keys():
+            result[k] = self.__asdict(d[k])
+        return result
+
+    def asdict(self) -> dict:
+        """Get a built-in dict representation of itself.
+
+        All the nested mappings are converted into :class:`dict`.
+
+        Returns:
+            Built-in :class:`dict` object.
+        """
+        return self.__asdict(self)
+
     def merge(self, d):
         merge(self, d)
 

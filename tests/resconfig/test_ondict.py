@@ -196,6 +196,18 @@ class TestONDict:
         assert list(d.allkeys(as_str=True)) == ["foo.bar.baz", "foo.qux"]
 
 
+class TestAsDict:
+    def test(self):
+        d = ONDict({"a.b.c": 0})
+        assert type(d) == ONDict
+        assert type(d["a"]) == ONDict
+        assert type(d["a"]["b"]) == ONDict
+        d = d.asdict()
+        assert type(d) == dict
+        assert type(d["a"]) == dict
+        assert type(d["a"]["b"]) == dict
+
+
 class TestMerge:
     @pytest.mark.parametrize(
         "d1, d2, expected",
