@@ -228,6 +228,18 @@ class TestONDict:
         assert list(d.allkeys()) == [("foo", "bar", "baz"), ("foo", "qux")]
         assert list(d.allkeys(as_str=True)) == ["foo.bar.baz", "foo.qux"]
 
+    def test_asdict(self):
+        d = ONDict({"a.b.c": 0})
+        assert type(d) == ONDict
+        assert type(d["a"]) == ONDict
+        assert type(d["a.b"]) == ONDict
+        assert type(d["a.b.c"]) == int
+        d = d.asdict()
+        assert type(d) == dict
+        assert type(d["a"]) == dict
+        assert type(d["a"]["b"]) == dict
+        assert type(d["a"]["b"]["c"]) == int
+
     @pytest.mark.parametrize(
         "args, kwargs, expected",
         [
