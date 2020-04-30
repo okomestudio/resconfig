@@ -15,6 +15,22 @@ class TestONDict:
     def d(self):
         yield ONDict(deepcopy(self.default))
 
+    def test_init_default(self):
+        d = ONDict()
+        assert d == {}
+
+    def test_init_mapping(self):
+        d = ONDict(self.default)
+        assert d == self.default
+
+    def test_init_iterable(self):
+        d = ONDict(((k, v) for k, v in self.default.items()))
+        assert d == self.default
+
+    def test_init_kwargs(self):
+        d = ONDict(**self.default)
+        assert d == self.default
+
     @pytest.mark.parametrize(
         "key, expected",
         [
@@ -57,6 +73,14 @@ class TestONDict:
     def test_getitem(self, d, key, expected):
         assert d[key] == expected
 
+    def test_getitem_nested_value_type(self, d):
+        t = d["foo"]
+        assert type(t) == ONDict
+
+    def test_getitem_nested_value_identity(self, d):
+        t = d["foo"]
+        assert d["foo"] is t
+
     @pytest.mark.parametrize("key", ["bar", "foo.buz", "foo.bar.qux", "bar.foo"])
     def test_getitem_error(self, d, key):
         with pytest.raises(KeyError):
@@ -91,6 +115,14 @@ class TestONDict:
     )
     def test_get(self, d, args, kwargs, expected):
         assert d.get(*args, **kwargs) == expected
+
+    def test_get_nested_value_type(self, d):
+        t = d.get("foo")
+        assert type(t) == ONDict
+
+    def test_get_nested_value_identity(self, d):
+        t = d.get("foo")
+        assert d.get("foo") is t
 
     @pytest.mark.parametrize(
         "key, kwargs, popped, expected",
@@ -164,6 +196,7 @@ class TestONDict:
         ],
     )
     def test_update(self, d, args, kwargs, expected):
+        # d = {"foo": {"bar": {"baz": 0}, "qux": "quux"}}
         d.update(*args, **kwargs)
         assert d == expected
 
@@ -194,6 +227,49 @@ class TestONDict:
     def test_allkeys(self, d):
         assert list(d.allkeys()) == [("foo", "bar", "baz"), ("foo", "qux")]
         assert list(d.allkeys(as_str=True)) == ["foo.bar.baz", "foo.qux"]
+
+    def test_asdict(self):
+        d = ONDict({"a.b.c": 0})
+        assert type(d) == ONDict
+        assert type(d["a"]) == ONDict
+        assert type(d["a.b"]) == ONDict
+        assert type(d["a.b.c"]) == int
+        d = d.asdict()
+        assert type(d) == dict
+        assert type(d["a"]) == dict
+        assert type(d["a"]["b"]) == dict
+        assert type(d["a"]["b"]["c"]) == int
+
+    @pytest.mark.parametrize(
+        "args, kwargs, expected",
+        [
+            (({"bar": 3},), {}, {**default, **{"bar": 3}}),
+            (({"foo": 1, "bar.baz": 3},), {}, {"foo": 1, "bar": {"baz": 3}}),
+            (
+                ({"foo.baz.bar": 1},),
+                {},
+                {"foo": {"bar": {"baz": 0}, "qux": "quux", "baz": {"bar": 1}}},
+            ),
+            ([(("bar", 3),)], {}, {**default, **{"bar": 3}}),
+            ([(("foo", 1), ("bar.baz", 3))], {}, {"foo": 1, "bar": {"baz": 3}}),
+            (
+                [(("foo.baz.bar", 1),)],
+                {},
+                {"foo": {"bar": {"baz": 0}, "qux": "quux", "baz": {"bar": 1}}},
+            ),
+            ([], {"bar": 3}, {**default, **{"bar": 3}}),
+            ([], {"foo": 1, "bar.baz": 3}, {"foo": 1, "bar": {"baz": 3}}),
+            (
+                [],
+                {"foo.baz.bar": 1},
+                {"foo": {"bar": {"baz": 0}, "qux": "quux", "baz": {"bar": 1}}},
+            ),
+        ],
+    )
+    def test_merge(self, d, args, kwargs, expected):
+        # d = {"foo": {"bar": {"baz": 0}, "qux": "quux"}}
+        d.merge(*args, **kwargs)
+        assert d == expected
 
 
 class TestMerge:
