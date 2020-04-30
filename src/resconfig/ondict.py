@@ -9,7 +9,10 @@ from .typing import Callable
 from .typing import Generator
 from .typing import Iterable
 from .typing import Key
+from .typing import Mapping
+from .typing import Optional
 from .typing import Tuple
+from .typing import Type
 
 _default = object()
 
@@ -97,24 +100,24 @@ class ONDict(OrderedDict):
                 raise TypeError(f"update expected at most 1 argument, got {len(args)}")
             arg = args[0]
             if hasattr(arg, "keys"):
-                super().update(normalize(arg))
+                super().update(normalize(arg, cls=self.__class__))
             else:
                 try:
                     for k, v in arg:
-                        super().update(normalize({k: v}))
+                        super().update(normalize({k: v}, cls=self.__class__))
                 except Exception:
                     raise ValueError(
                         "dictionary update sequence element #0 has length "
                         f"{ len(arg[0]) }; 2 is required"
                     )
         for k in kwargs:
-            super().update(normalize({k: kwargs[k]}))
+            super().update(normalize({k: kwargs[k]}, cls=self.__class__))
 
     @classmethod
     def fromkeys(cls, iterable, value=None):
         dic = cls()
         for key in iterable:
-            dic = merge(dic, normalize({key: value}))
+            dic = merge(dic, normalize({key: value}, cls=cls))
         return dic
 
     # custom utility methods
@@ -150,18 +153,18 @@ class ONDict(OrderedDict):
             arg = args[0]
             if hasattr(arg, "keys"):
                 for k, v in arg.items():
-                    merge(self, normalize({k: v}))
+                    merge(self, normalize({k: v}, cls=self.__class__))
             else:
                 try:
                     for k, v in arg:
-                        merge(self, normalize({k: v}))
+                        merge(self, normalize({k: v}, cls=self.__class__))
                 except Exception:
                     raise ValueError(
                         "dictionary update sequence element #0 has length "
                         f"{ len(arg[0]) }; 2 is required"
                     )
         for k in kwargs:
-            merge(self, normalize({k: kwargs[k]}))
+            merge(self, normalize({k: kwargs[k]}, cls=self.__class__))
 
 
 def _key_error(obj, key):
@@ -251,11 +254,17 @@ def merge(a: dict, b: dict) -> dict:
     return __merge(a, b)
 
 
-def normalize(d: dict) -> dict:
+def normalize(
+    d: Mapping[Key, Any], cls: Optional[Type[Mapping]] = None
+) -> Mapping[Key, Any]:
     """Normalize the :class:`dict` by expanding nested keys.
 
     This function returns a new :class:`dict` object by expanding the nested keys and
     their values into nested :class:`dict` objects.
+
+    Args:
+        d: Dict to be normalized
+        cls: The mapping class for creating new (nested) mappings.
 
     Raises:
         TypeError: When an attempt is made to convert a non-:class:`dict` node to a
@@ -263,12 +272,13 @@ def normalize(d: dict) -> dict:
     """
     if not isinstance(d, MutableMapping):
         return d
-    new = d.__class__()
+    cls = cls or d.__class__
+    new = cls()
     for key, value in d.items():
         keys = list(normkey(key))
         if len(keys) == 1:
             k = keys[0]
-            expanded = normalize(value)
+            expanded = normalize(value, cls=cls)
             new[k] = (
                 merge(new[k], expanded)
                 if k in new and isinstance(new[k], MutableMapping)
@@ -278,7 +288,7 @@ def normalize(d: dict) -> dict:
             ref = new
             for idx, k in enumerate(keys[:-1]):
                 if k not in ref:
-                    ref[k] = d.__class__()
+                    ref[k] = cls()
                 ref = ref[k]
                 if not isinstance(ref, MutableMapping):
                     k = ".".join(keys[: idx + 1])
@@ -286,7 +296,7 @@ def normalize(d: dict) -> dict:
                         f"cannot convert a node from non-dict to dict at '{k}'"
                     )
             k = keys[-1]
-            expanded = normalize(value)
+            expanded = normalize(value, cls=cls)
             ref[k] = (
                 merge(ref[k], expanded)
                 if k in ref and isinstance(ref[k], MutableMapping)

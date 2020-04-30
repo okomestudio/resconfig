@@ -73,6 +73,14 @@ class TestONDict:
     def test_getitem(self, d, key, expected):
         assert d[key] == expected
 
+    def test_getitem_nested_value_type(self, d):
+        t = d["foo"]
+        assert type(t) == ONDict
+
+    def test_getitem_nested_value_identity(self, d):
+        t = d["foo"]
+        assert d["foo"] is t
+
     @pytest.mark.parametrize("key", ["bar", "foo.buz", "foo.bar.qux", "bar.foo"])
     def test_getitem_error(self, d, key):
         with pytest.raises(KeyError):
@@ -107,6 +115,14 @@ class TestONDict:
     )
     def test_get(self, d, args, kwargs, expected):
         assert d.get(*args, **kwargs) == expected
+
+    def test_get_nested_value_type(self, d):
+        t = d.get("foo")
+        assert type(t) == ONDict
+
+    def test_get_nested_value_identity(self, d):
+        t = d.get("foo")
+        assert d.get("foo") is t
 
     @pytest.mark.parametrize(
         "key, kwargs, popped, expected",
