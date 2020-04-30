@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from ..ondict import ONDict
 from ..typing import FilePath
 from ..typing import List
@@ -10,10 +8,6 @@ from .paths import JSONPath
 from .paths import TOMLPath
 from .paths import YAMLPath
 from .utils import ensure_path
-
-
-def _read_as_dict(filename: ConfigPath) -> ONDict:
-    return ONDict(filename.load())
 
 
 def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDict:
@@ -39,7 +33,7 @@ def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDic
         if path.is_file():
             if not isinstance(path, ConfigPath):
                 path = ConfigPath.from_extension(path)
-            content = _read_as_dict(path)
+            content = path.load()
             d.merge(content)
             if not merge:
                 break
@@ -65,7 +59,7 @@ class IO:
         self.update(read_from_files_as_dict(paths, merge))
 
     def __update_from_file(self, filename: ConfigPath):
-        self.update(_read_as_dict(filename))
+        self.update(filename.load())
 
     def update_from_file(self, filename: FilePath):
         """Update config from the file.

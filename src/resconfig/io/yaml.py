@@ -22,4 +22,4 @@ def dump(data, stream, spec=None, **kwargs):
 
 def load(stream, **kwargs):
     content = yaml.load(stream, yaml.FullLoader, **kwargs)
-    return content if content else {}
+    return ONDict(content if content else {})

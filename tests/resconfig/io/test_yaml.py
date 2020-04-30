@@ -11,7 +11,7 @@ content = """
 str: str
 int: 10
 bool: true
-null: null
+nullval: null
 array: [0, 1, 2]
 nested:
   str: mystr
@@ -49,7 +49,7 @@ class TestLoad(BaseTestLoad):
         assert loaded["bool"] is True
 
     def test_null(self, loaded):
-        assert loaded[None] is None
+        assert loaded["nullval"] is None
 
     def test_array(self, loaded):
         assert loaded["array"] == [0, 1, 2]
@@ -69,7 +69,7 @@ class TestDump:
         assert "bool: true" in dumped
 
     def test_null(self, dumped):
-        assert "null: null" in dumped
+        assert "nullval: null" in dumped
 
     def test_array(self, dumped):
         assert "array:\n- 0\n- 1\n- 2\n" in dumped

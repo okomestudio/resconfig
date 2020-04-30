@@ -1,3 +1,5 @@
+from ..ondict import ONDict
+
 try:
     from toml import dumps as _dump
     from toml import loads as _load
@@ -6,7 +8,7 @@ except ImportError:
 
 
 def load(f):
-    return _load(f.read())
+    return ONDict(_load(f.read()))
 
 
 def dump(content, f, spec=None):

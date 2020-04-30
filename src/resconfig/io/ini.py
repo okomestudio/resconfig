@@ -6,7 +6,7 @@ from ..ondict import ONDict
 from ..typing import IO
 
 
-def load(f: IO) -> dict:
+def load(f: IO) -> ONDict:
     parser = ConfigParser()
     parser.read_file(f)
     dic = ONDict()
@@ -30,7 +30,7 @@ def dump(content: ONDict, f: IO, spec=None):
     parser.write(f)
 
 
-def _make_dumpable(content, spec) -> dict:
+def _make_dumpable(content: ONDict, spec) -> dict:
     con = ONDict()
     con._create = True
     for key in list(content.allkeys()):

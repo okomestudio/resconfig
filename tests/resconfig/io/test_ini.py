@@ -1,8 +1,12 @@
+from datetime import datetime
 from io import StringIO
 
 import pytest
+from dateutil.parser import parse
 
+from resconfig.ddefs import datetime_
 from resconfig.io import ini
+from resconfig.ondict import ONDict
 
 from .bases import BaseTestLoad
 
@@ -28,6 +32,12 @@ dt = 2020-01-02T20:00:00.000000
 
 
 @pytest.fixture
+def spec():
+    spec = {"extras section": {"dt": datetime_(datetime.now())}}
+    yield ONDict(spec)
+
+
+@pytest.fixture
 def stream():
     yield StringIO(content)
 
@@ -39,21 +49,13 @@ def loaded(stream):
 
 @pytest.fixture
 def cast(loaded):
-    from dateutil.parser import parse
-
     loaded["extras section"]["dt"] = parse(loaded["extras section"]["dt"])
     yield loaded
 
 
 @pytest.fixture
-def dumped(cast, stream):
-    from resconfig.ddefs import datetime_
-    from datetime import datetime
-    from resconfig.ondict import ONDict
-
-    ini.dump(
-        cast, stream, ONDict({"extras section": {"dt": datetime_(datetime.now())}})
-    )
+def dumped(cast, stream, spec):
+    ini.dump(cast, stream, spec)
     stream.seek(0)
     yield stream.read()
 
