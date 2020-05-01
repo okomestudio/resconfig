@@ -15,13 +15,13 @@ class ConfigPath(type(Path())):
 
     module = None
 
-    def dump(self, rc: "ResConfig"):
+    def dump(self, conf, schema=None):
         with open(self, "w") as f:
-            self.module.dump(rc._conf, f, spec=rc._default)
+            self.module.dump(conf, f, schema)
 
-    def load(self) -> "ONDict":
+    def load(self, schema=None) -> "ONDict":
         with open(self) as f:
-            return self.module.load(f)
+            return self.module.load(f, schema)
 
     @classmethod
     def from_extension(cls, filename: FilePath) -> "ConfigPath":

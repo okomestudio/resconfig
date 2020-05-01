@@ -5,11 +5,11 @@ from json.decoder import JSONDecodeError
 from ..ondict import ONDict
 
 
-def dump(content, f, spec=None):
+def dump(content, f, schema=None):
     return _dump(content, f)
 
 
-def load(f):
+def load(f, schema=None):
     try:
         content = _load(f)
     except JSONDecodeError:

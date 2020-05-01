@@ -1,5 +1,7 @@
 from datetime import datetime
 
+from dateutil.parser import parse as dtparse
+
 from .ondict import ONDict
 
 
@@ -7,26 +9,36 @@ class ddef:
     vtype = None
     nullable = False
 
-    def __init__(self, value, doc=None):
-        super().__init__()
+    def __init__(self, value, doc=None, **kwargs):
+        super().__init__(**kwargs)
         if not isinstance(value, self.vtype):
             raise ValueError("%s is not of %s type", value, self.vtype)
         self.value = value
         self.doc = doc
 
     @classmethod
-    def cast(cls, value):
+    def from_obj(cls, value):
         return cls.vtype(value)
+
+    @classmethod
+    def to_str(cls, value):
+        return str(value)
 
 
 class nullable:
     nullable = True
 
     @classmethod
-    def cast(cls, value):
+    def from_obj(cls, value):
         if value is None:
             return None
-        return super().cast(value)
+        return super().from_obj(value)
+
+    @classmethod
+    def to_str(cls, value):
+        if value is None:
+            return "null"
+        return super().to_str(value)
 
 
 class bool_(ddef):
@@ -39,6 +51,22 @@ class bool_or_none(nullable, bool_):
 
 class datetime_(ddef):
     vtype = datetime
+
+    @classmethod
+    def from_obj(cls, value):
+        if isinstance(value, datetime):
+            pass
+        elif isinstance(value, str):
+            value = dtparse(value)
+        elif isinstance(value, (float, int)):
+            value = datetime.fromtimestamp(value)
+        else:
+            raise ValueError(f"invalid value for datetime: {value!r}")
+        return value
+
+    @classmethod
+    def to_str(cls, value):
+        return value.isoformat()
 
 
 class datetime_or_none(nullable, datetime_):

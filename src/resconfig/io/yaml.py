@@ -6,7 +6,7 @@ except ImportError:
     yaml = None
 
 
-def dump(data, stream, spec=None, **kwargs):
+def dump(data, stream, schema=None, **kwargs):
     class _Dumper(yaml.Dumper):
         pass
 
@@ -20,6 +20,6 @@ def dump(data, stream, spec=None, **kwargs):
     yaml.dump(data, stream, _Dumper, **kwargs)
 
 
-def load(stream, **kwargs):
+def load(stream, schema=None, **kwargs):
     content = yaml.load(stream, yaml.FullLoader, **kwargs)
     return ONDict(content if content else {})

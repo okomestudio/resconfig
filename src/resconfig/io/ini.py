@@ -6,7 +6,7 @@ from ..ondict import ONDict
 from ..typing import IO
 
 
-def load(f: IO) -> ONDict:
+def load(f: IO, schema=None) -> ONDict:
     parser = ConfigParser()
     parser.read_file(f)
     dic = ONDict()
@@ -17,11 +17,11 @@ def load(f: IO) -> ONDict:
     return dic
 
 
-def dump(content: ONDict, f: IO, spec=None):
+def dump(content: ONDict, f: IO, schema=None):
     if _depth(content) > 2:
         raise ValueError("INI config does not allow nested options")
 
-    content = _make_dumpable(content, spec or {})
+    content = _make_dumpable(content, schema or {})
 
     _unescape_all_keys(content)
 
@@ -30,18 +30,16 @@ def dump(content: ONDict, f: IO, spec=None):
     parser.write(f)
 
 
-def _make_dumpable(content: ONDict, spec) -> dict:
+def _make_dumpable(content: ONDict, schema) -> dict:
     con = ONDict()
     con._create = True
     for key in list(content.allkeys()):
-        con[key] = _to_dumpable(content[key], spec.get(key))
+        value = content[key]
+        if key in schema:
+            if isinstance(schema[key], ddef):
+                value = schema[key].to_str(value)
+        con[key] = value
     return con.asdict()
-
-
-def _to_dumpable(value, from_spec):
-    if isinstance(from_spec, ddef):
-        value = str(value)
-    return value
 
 
 def _escape_dot(key: str) -> str:
