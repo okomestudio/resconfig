@@ -5,7 +5,7 @@ from dateutil.parser import parse as dtparse
 from .ondict import ONDict
 
 
-class ddef:
+class Field:
     vtype = None
     nullable = False
 
@@ -23,7 +23,7 @@ class ddef:
         return str(value)
 
 
-class nullable:
+class Nullable:
     nullable = True
 
     @classmethod
@@ -39,7 +39,7 @@ class nullable:
         return super().to_str(value)
 
 
-class bool_(ddef):
+class Bool(Field):
     vtype = bool
 
     @classmethod
@@ -47,11 +47,11 @@ class bool_(ddef):
         return "true" if value else "false"
 
 
-class bool_or_none(nullable, bool_):
+class BoolOrNone(Nullable, Bool):
     pass
 
 
-class datetime_(ddef):
+class Datetime(Field):
     vtype = datetime
 
     @classmethod
@@ -71,31 +71,31 @@ class datetime_(ddef):
         return value.isoformat()
 
 
-class datetime_or_none(nullable, datetime_):
+class DatetimeOrNone(Nullable, Datetime):
     pass
 
 
-class float_(ddef):
+class Float(Field):
     vtype = float
 
 
-class float_or_none(nullable, float_):
+class FloatOrNone(Nullable, Float):
     pass
 
 
-class int_(ddef):
+class Int(Field):
     vtype = int
 
 
-class int_or_none(nullable, int_):
+class IntOrNone(Nullable, Int):
     pass
 
 
-class str_(ddef):
+class Str(Field):
     vtype = str
 
 
-class str_or_none(nullable, str_):
+class StrOrNone(Nullable, Str):
     pass
 
 
@@ -105,7 +105,7 @@ def extract_values(d: ONDict) -> ONDict:
     valueonly._create = True
     for key in d.allkeys():
         v = d[key]
-        if isinstance(v, ddef):
+        if isinstance(v, Field):
             v = v.value
         valueonly[key] = v
     return valueonly

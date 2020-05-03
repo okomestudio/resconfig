@@ -1,9 +1,4 @@
-from ..fields import bool_
-from ..fields import datetime_
-from ..fields import ddef
-from ..fields import float_
-from ..fields import int_
-from ..fields import str_
+from .. import fields
 from ..ondict import ONDict
 from ..typing import IO
 from ..typing import Any
@@ -25,10 +20,10 @@ def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
 
 
 def _dumpobj(value, vdef) -> Any:
-    if isinstance(vdef, ddef):
-        if isinstance(vdef, (bool_, float_, int_, str_)):
+    if isinstance(vdef, fields.Field):
+        if isinstance(vdef, (fields.Bool, fields.Float, fields.Int, fields.Str)):
             pass
-        elif isinstance(vdef, (datetime_,)):
+        elif isinstance(vdef, (fields.Datetime,)):
             value = vdef.to_str(value)
         else:
             value = vdef.to_str(value)

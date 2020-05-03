@@ -1,12 +1,7 @@
 from collections.abc import MutableMapping
 from configparser import ConfigParser
 
-from ..fields import bool_
-from ..fields import datetime_
-from ..fields import ddef
-from ..fields import float_
-from ..fields import int_
-from ..fields import str_
+from .. import fields
 from ..ondict import ONDict
 from ..typing import IO
 from ..typing import Any
@@ -31,7 +26,7 @@ def _dumpobj(content: ONDict, schema: ONDict) -> dict:
     con._create = True
     for key in list(content.allkeys()):
         value = content[key]
-        if key in schema and isinstance(schema[key], ddef):
+        if key in schema and isinstance(schema[key], fields.Field):
             value = schema[key].to_str(value)
         con[key] = value
     return con.asdict()
@@ -51,17 +46,17 @@ def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
 
 
 def _loadobj(schema: ONDict, key: Key, section: dict, option: str) -> Any:
-    if key in schema and isinstance(schema[key], ddef):
+    if key in schema and isinstance(schema[key], fields.Field):
         vtype = schema[key]
-        if isinstance(vtype, bool_):
+        if isinstance(vtype, fields.Bool):
             value = section.getboolean(option)
-        elif isinstance(vtype, datetime_):
+        elif isinstance(vtype, fields.Datetime):
             value = section[option]
-        elif isinstance(vtype, float_):
+        elif isinstance(vtype, fields.Float):
             value = section.getfloat(option)
-        elif isinstance(vtype, int_):
+        elif isinstance(vtype, fields.Int):
             value = section.getint(option)
-        elif isinstance(vtype, str_):
+        elif isinstance(vtype, fields.Str):
             value = section[option]
         else:
             value = section[option]

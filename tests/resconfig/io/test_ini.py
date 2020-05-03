@@ -5,7 +5,7 @@ from io import StringIO
 import pytest
 from dateutil.parser import parse
 
-from resconfig.fields import datetime_
+from resconfig import fields
 from resconfig.io import ini
 from resconfig.ondict import ONDict
 
@@ -35,7 +35,7 @@ dt = 2020-01-02T20:00:00.000000
 
 @pytest.fixture
 def spec():
-    spec = {"extras section": {"dt": datetime_(datetime.now())}}
+    spec = {"extras section": {"dt": fields.Datetime(datetime.now())}}
     yield ONDict(spec)
 
 

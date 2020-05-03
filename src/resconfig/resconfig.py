@@ -6,7 +6,7 @@ from logging import getLogger
 
 from .actions import Action
 from .clargs import CLArgs
-from .fields import ddef
+from .fields import Field
 from .fields import extract_values
 from .io import IO
 from .io.io import read_from_files_as_dict
@@ -170,7 +170,7 @@ class ResConfig(Watchable, IO, CLArgs):
         if not isdict(newconf[_key]):
             if key[1:] in self._default:
                 vt = self._default[key[1:]]
-                if isinstance(vt, ddef):
+                if isinstance(vt, Field):
                     newval = vt.cast(newconf[_key])
                 else:
                     newval = newconf[_key]
