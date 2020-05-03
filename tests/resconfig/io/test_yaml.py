@@ -80,8 +80,11 @@ class TestDump(BaseTestIODump):
     def test_float(self, dumped):
         assert "float: 3.14\n" in dumped
 
-    def test_integer(self, dumped):
+    def test_int(self, dumped):
         assert "int: 255\n" in dumped
 
-    def test_string(self, dumped):
+    def test_nullable(self, dumped):
+        assert "nullable: null\n" in dumped
+
+    def test_str(self, dumped):
         assert "str: foo bar\n" in dumped

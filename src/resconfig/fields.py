@@ -23,7 +23,7 @@ def Nullable(field_type):
 
         @classmethod
         def from_obj(cls, value):
-            if value is None:
+            if value is None or value == "null":
                 return None
             return super().from_obj(value)
 

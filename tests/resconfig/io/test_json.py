@@ -83,5 +83,8 @@ class TestDump(BaseTestIODump):
     def test_integer(self, dumped):
         assert '"int": 255' in dumped
 
+    def test_nullable(self, dumped):
+        assert '"nullable": null' in dumped
+
     def test_string(self, dumped):
         assert '"str": "foo bar"' in dumped

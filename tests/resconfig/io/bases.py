@@ -36,6 +36,7 @@ class BaseTestIODump:
                 "float": fields.Float(3.14),
                 "int": fields.Int(255),
                 "str": fields.Str("foo bar"),
+                "nullable": fields.NullableInt(),
                 "custom": CustomField(0),
             }
         }
