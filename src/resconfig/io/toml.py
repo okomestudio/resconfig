@@ -1,4 +1,6 @@
 from ..ondict import ONDict
+from ..typing import IO
+from ..typing import Optional
 
 try:
     from toml import dumps as _dump
@@ -7,9 +9,9 @@ except ImportError:
     _dump = _load = None
 
 
-def load(f, schema=None):
+def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
+    f.write(_dump(content.asdict()))
+
+
+def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
     return ONDict(_load(f.read()))
-
-
-def dump(content, f, schema=None):
-    f.write(_dump(dict(content)))

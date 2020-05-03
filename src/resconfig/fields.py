@@ -11,9 +11,7 @@ class ddef:
 
     def __init__(self, value, doc=None, **kwargs):
         super().__init__(**kwargs)
-        if not isinstance(value, self.vtype):
-            raise ValueError("%s is not of %s type", value, self.vtype)
-        self.value = value
+        self.value = self.from_obj(value)
         self.doc = doc
 
     @classmethod
@@ -43,6 +41,10 @@ class nullable:
 
 class bool_(ddef):
     vtype = bool
+
+    @classmethod
+    def to_str(cls, value):
+        return "true" if value else "false"
 
 
 class bool_or_none(nullable, bool_):

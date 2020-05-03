@@ -6,8 +6,8 @@ from logging import getLogger
 
 from .actions import Action
 from .clargs import CLArgs
-from .ddefs import ddef
-from .ddefs import extract_values
+from .fields import ddef
+from .fields import extract_values
 from .io import IO
 from .io.io import read_from_files_as_dict
 from .io.utils import ensure_path

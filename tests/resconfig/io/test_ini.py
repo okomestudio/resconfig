@@ -1,13 +1,15 @@
+import re
 from datetime import datetime
 from io import StringIO
 
 import pytest
 from dateutil.parser import parse
 
-from resconfig.ddefs import datetime_
+from resconfig.fields import datetime_
 from resconfig.io import ini
 from resconfig.ondict import ONDict
 
+from .bases import BaseTestIODump
 from .bases import BaseTestLoad
 
 content = """
@@ -53,13 +55,6 @@ def cast(loaded):
     yield loaded
 
 
-@pytest.fixture
-def dumped(cast, stream, spec):
-    ini.dump(cast, stream, spec)
-    stream.seek(0)
-    yield stream.read()
-
-
 class TestLoad(BaseTestLoad):
     module = ini
 
@@ -86,19 +81,25 @@ class TestLoad(BaseTestLoad):
         assert loaded["extras section"]["key"] == "Value"
 
 
-class TestDump:
+class TestDump(BaseTestIODump):
+    module = ini
+
     def test_section(self, dumped):
-        assert "[extras section]" in dumped
-        assert "[bitbucket.org]" in dumped
+        assert "[section]\n" in dumped
 
-    def test_string(self, dumped):
-        assert "user = hg" in dumped
-
-    def test_integer(self, dumped):
-        assert "compressionlevel = 9" in dumped
+    def test_bool(self, dumped):
+        assert "bool = true\n" in dumped
 
     def test_datetime(self, dumped):
-        assert "dt = 2020-01-02T20:00:00.000000" in dumped
+        assert re.search(
+            r"($|\n)datetime = 2019-05-27T10:00:00(\.0*)?-07:00(\n|$)", dumped
+        )
 
-    def test_boolean(self, dumped):
-        assert "compression = yes" in dumped
+    def test_float(self, dumped):
+        assert "float = 3.14\n" in dumped
+
+    def test_integer(self, dumped):
+        assert "int = 255\n" in dumped
+
+    def test_string(self, dumped):
+        assert "str = foo bar\n" in dumped

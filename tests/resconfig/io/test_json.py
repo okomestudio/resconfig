@@ -1,9 +1,11 @@
+import re
 from io import StringIO
 
 import pytest
 
 from resconfig.io import json
 
+from .bases import BaseTestIODump
 from .bases import BaseTestLoad
 
 content = """
@@ -60,21 +62,23 @@ class TestLoad(BaseTestLoad):
         assert loaded["nested"]["int"] == 10
 
 
-class TestDump:
-    def test_string(self, dumped):
-        assert '"str": "str"' in dumped
+class TestDump(BaseTestIODump):
+    module = json
 
-    def test_integer(self, dumped):
-        assert '"int": 10' in dumped
+    def test_section(self, dumped):
+        assert '"section":' in dumped
 
     def test_bool(self, dumped):
         assert '"bool": true' in dumped
 
-    def test_null(self, dumped):
-        assert '"null": null' in dumped
+    def test_datetime(self, dumped):
+        assert re.search(r'"datetime": "2019-05-27T10:00:00(\.0*)?-07:00"', dumped)
 
-    def test_array(self, dumped):
-        assert '"array": [0, 1, 2]' in dumped
+    def test_float(self, dumped):
+        assert '"float": 3.14' in dumped
 
-    def test_nested(self, dumped):
-        assert '"nested": {' in dumped
+    def test_integer(self, dumped):
+        assert '"int": 255' in dumped
+
+    def test_string(self, dumped):
+        assert '"str": "foo bar"' in dumped

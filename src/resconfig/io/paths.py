@@ -2,6 +2,7 @@ from logging import getLogger
 from pathlib import Path
 
 from ..typing import FilePath
+from ..typing import Optional
 from . import ini
 from . import json
 from . import toml
@@ -15,11 +16,22 @@ class ConfigPath(type(Path())):
 
     module = None
 
-    def dump(self, conf, schema=None):
+    def dump(self, conf: "ONDict", schema: Optional["ONDict"] = None):
+        """Dump config to file at path.
+
+        Args:
+            conf: Configuration to dump.
+            schema: Configuration schema.
+        """
         with open(self, "w") as f:
             self.module.dump(conf, f, schema)
 
-    def load(self, schema=None) -> "ONDict":
+    def load(self, schema: Optional["ONDict"] = None) -> "ONDict":
+        """Load config from file at path.
+
+        Args:
+            schema: Configuration schema.
+        """
         with open(self) as f:
             return self.module.load(f, schema)
 

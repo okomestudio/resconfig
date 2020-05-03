@@ -1,3 +1,4 @@
+import re
 from datetime import datetime
 from datetime import timedelta
 from datetime import timezone
@@ -7,6 +8,7 @@ import pytest
 
 from resconfig.io import toml
 
+from .bases import BaseTestIODump
 from .bases import BaseTestLoad
 
 content = """
@@ -98,35 +100,25 @@ class TestLoad(BaseTestLoad):
         assert loaded["extras"]["nested"]["key"]["example"] == "foobar"
 
 
-class TestDump:
-    def test_no_section(self, dumped):
-        assert "title" in dumped
+class TestDump(BaseTestIODump):
+    module = toml
 
     def test_section(self, dumped):
-        assert "[owner]" in dumped
+        assert "[section]\n" in dumped
 
-    def test_string(self, dumped):
-        assert 'name = "Tom Preston-Werner"' in dumped
+    def test_bool(self, dumped):
+        assert "bool = true\n" in dumped
 
     def test_datetime(self, dumped):
-        assert "dob = 1979-05-27T07:32:00-08:00" in dumped
+        assert re.search(
+            r"($|\n)datetime = 2019-05-27T10:00:00(\.0*)?-07:00(\n|$)", dumped
+        )
+
+    def test_float(self, dumped):
+        assert "float = 3.14\n" in dumped
 
     def test_integer(self, dumped):
-        assert "connection_max = 5000" in dumped
+        assert "int = 255\n" in dumped
 
-    def test_boolean(self, dumped):
-        assert "enabled = true" in dumped
-
-    def test_array(self, dumped):
-        assert "ports = [ 8001, 8001, 8002,]" in dumped
-
-    def test_nested_arrays(self, dumped):
-        assert '[ [ "gamma", "delta",],' in dumped
-
-    def test_servers_nested_section(self, dumped):
-        assert "[servers.alpha]" in dumped
-        assert 'ip = "10.0.0.1"' in dumped
-
-    def test_extras_nested_keys(self, dumped):
-        assert "[extras.nested.key]" in dumped
-        assert 'example = "foobar"' in dumped
+    def test_string(self, dumped):
+        assert 'str = "foo bar"\n' in dumped
