@@ -21,14 +21,14 @@ def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
     _dump(con.asdict(), f)
 
 
-def _dumpobj(value, vdef) -> Any:
-    if isinstance(vdef, fields.Field):
-        if isinstance(vdef, (fields.Bool, fields.Float, fields.Int, fields.Str)):
+def _dumpobj(value, field) -> Any:
+    if isinstance(field, fields.Field):
+        if isinstance(field, (fields.Bool, fields.Float, fields.Int, fields.Str)):
             pass
-        elif isinstance(vdef, (fields.Datetime,)):
-            value = vdef.to_str(value)
+        elif isinstance(field, (fields.Datetime,)):
+            value = field.to_str(value)
         else:
-            value = vdef.to_str(value)
+            value = field.to_str(value)
     return value
 
 
@@ -53,9 +53,9 @@ def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
     return ONDict(content)
 
 
-def _loadobj(vdef: Union[fields.Field, Any], value: Any) -> Any:
+def _loadobj(field: Union[fields.Field, Any], value: Any) -> Any:
     if isinstance(
-        vdef, (fields.Bool, fields.Datetime, fields.Float, fields.Int, fields.Str)
+        field, (fields.Bool, fields.Datetime, fields.Float, fields.Int, fields.Str)
     ):
-        value = vdef.from_obj(value)
+        value = field.from_obj(value)
     return value

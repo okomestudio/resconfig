@@ -71,6 +71,9 @@ class TestDump(BaseTestIODump):
     def test_bool(self, dumped):
         assert '"bool": true' in dumped
 
+    def test_custom(self, dumped):
+        assert '"custom": "by custom"' in dumped
+
     def test_datetime(self, dumped):
         assert re.search(r'"datetime": "2019-05-27T10:00:00(\.0*)?-07:00"', dumped)
 

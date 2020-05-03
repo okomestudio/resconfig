@@ -1,58 +1,73 @@
 from datetime import datetime
+from functools import wraps
+from types import new_class
 
 from dateutil.parser import parse as dtparse
 
 from .ondict import ONDict
 
 
-class Field:
-    vtype = None
-    nullable = False
+def checktype(f):
+    @wraps(f)
+    def deco(cls, value):
+        if not isinstance(value, cls.ftype):
+            raise TypeError(f"{value} is not {cls.ftype}")
+        return f(cls, value)
 
-    def __init__(self, value, doc=None, **kwargs):
+    return deco
+
+
+def Nullable(field_type):
+    class _Nullable(field_type):
+        default = None
+
+        @classmethod
+        def from_obj(cls, value):
+            if value is None:
+                return None
+            return super().from_obj(value)
+
+        @classmethod
+        def to_str(cls, value):
+            if value is None:
+                return "null"
+            return super().to_str(value)
+
+    return new_class("Nullable" + field_type.__name__, (_Nullable, field_type))
+
+
+class Field:
+    ftype = None
+    default = None
+
+    def __init__(self, value=None, doc=None, **kwargs):
         super().__init__(**kwargs)
-        self.value = self.from_obj(value)
+        self.value = self.default if value is None else self.from_obj(value)
         self.doc = doc
 
     @classmethod
     def from_obj(cls, value):
-        return cls.vtype(value)
+        return cls.ftype(value)
 
     @classmethod
+    @checktype
     def to_str(cls, value):
         return str(value)
 
 
-class Nullable:
-    nullable = True
-
-    @classmethod
-    def from_obj(cls, value):
-        if value is None:
-            return None
-        return super().from_obj(value)
-
-    @classmethod
-    def to_str(cls, value):
-        if value is None:
-            return "null"
-        return super().to_str(value)
-
-
 class Bool(Field):
-    vtype = bool
+    ftype = bool
+    default = False
 
     @classmethod
+    @checktype
     def to_str(cls, value):
         return "true" if value else "false"
 
 
-class BoolOrNone(Nullable, Bool):
-    pass
-
-
 class Datetime(Field):
-    vtype = datetime
+    ftype = datetime
+    default = datetime.fromtimestamp(0)
 
     @classmethod
     def from_obj(cls, value):
@@ -67,36 +82,31 @@ class Datetime(Field):
         return value
 
     @classmethod
+    @checktype
     def to_str(cls, value):
         return value.isoformat()
 
 
-class DatetimeOrNone(Nullable, Datetime):
-    pass
-
-
 class Float(Field):
-    vtype = float
-
-
-class FloatOrNone(Nullable, Float):
-    pass
+    ftype = float
+    default = 0.0
 
 
 class Int(Field):
-    vtype = int
-
-
-class IntOrNone(Nullable, Int):
-    pass
+    ftype = int
+    default = 0
 
 
 class Str(Field):
-    vtype = str
+    ftype = str
+    default = ""
 
 
-class StrOrNone(Nullable, Str):
-    pass
+NullableBool = Nullable(Bool)
+NullableDatetime = Nullable(Datetime)
+NullableFloat = Nullable(Float)
+NullableInt = Nullable(Int)
+NullableStr = Nullable(Str)
 
 
 def extract_values(d: ONDict) -> ONDict:

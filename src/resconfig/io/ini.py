@@ -14,22 +14,25 @@ from .utils import unescape_dots_in_keys
 def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
     if _depth(content) > 2:
         raise ValueError("INI config does not allow nested options")
-    content = _dumpobj(content, schema or {})
-    unescape_dots_in_keys(content)
-    parser = ConfigParser()
-    parser.read_dict(content)
-    parser.write(f)
+    schema = schema or {}
 
-
-def _dumpobj(content: ONDict, schema: ONDict) -> dict:
     con = ONDict()
     con._create = True
     for key in list(content.allkeys()):
-        value = content[key]
-        if key in schema and isinstance(schema[key], fields.Field):
-            value = schema[key].to_str(value)
-        con[key] = value
-    return con.asdict()
+        con[key] = _dumpobj(content[key], schema.get(key))
+
+    con = con.asdict()
+
+    unescape_dots_in_keys(con)
+    parser = ConfigParser()
+    parser.read_dict(con)
+    parser.write(f)
+
+
+def _dumpobj(value, field) -> Any:
+    if isinstance(field, fields.Field):
+        value = field.to_str(value)
+    return value
 
 
 def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:

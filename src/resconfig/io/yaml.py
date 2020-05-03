@@ -19,14 +19,14 @@ def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
     yaml.dump(con.asdict(), f)
 
 
-def _dumpobj(value, vdef) -> Any:
-    if isinstance(vdef, fields.Field):
-        if isinstance(vdef, (fields.Bool, fields.Float, fields.Int, fields.Str)):
+def _dumpobj(value, field) -> Any:
+    if isinstance(field, fields.Field):
+        if isinstance(field, (fields.Bool, fields.Float, fields.Int, fields.Str)):
             pass
-        elif isinstance(vdef, (fields.Datetime,)):
-            value = vdef.to_str(value)
+        elif isinstance(field, (fields.Datetime,)):
+            value = field.to_str(value)
         else:
-            value = vdef.to_str(value)
+            value = field.to_str(value)
     return value
 
 
