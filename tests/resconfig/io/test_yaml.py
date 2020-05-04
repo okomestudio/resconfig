@@ -6,7 +6,7 @@ import pytest
 from resconfig.io import yaml
 
 from .bases import BaseTestIODump
-from .bases import BaseTestLoad
+from .bases import BaseTestIOLoad
 
 content = """
 ---
@@ -38,7 +38,7 @@ def dumped(loaded, stream):
     yield stream.read()
 
 
-class TestLoad(BaseTestLoad):
+class TestLoad(BaseTestIOLoad):
     module = yaml
 
     def test_integer(self, loaded):

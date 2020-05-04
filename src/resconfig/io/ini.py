@@ -5,7 +5,6 @@ from .. import fields
 from ..ondict import ONDict
 from ..typing import IO
 from ..typing import Any
-from ..typing import Key
 from ..typing import Optional
 from .utils import escape_dot
 from .utils import unescape_dots_in_keys
@@ -40,32 +39,21 @@ def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
     parser = ConfigParser()
     parser.read_file(f)
     conf = ONDict()
+    conf._create = True
     for section in parser.sections():
-        ref = conf.setdefault(escape_dot(section), ONDict())
+        section_key = escape_dot(section)
+        ref = conf.setdefault(section_key, ONDict())
         for option in parser[section]:
-            key = escape_dot(option)
-            ref[key] = _loadobj(schema, key, parser[section], option)
+            option_key = escape_dot(option)
+            ref[option_key] = _loadobj(
+                schema.get((section_key, option_key)), parser[section][option]
+            )
     return conf
 
 
-def _loadobj(schema: ONDict, key: Key, section: dict, option: str) -> Any:
-    if key in schema and isinstance(schema[key], fields.Field):
-        vtype = schema[key]
-        if isinstance(vtype, fields.Bool):
-            value = section.getboolean(option)
-        elif isinstance(vtype, fields.Datetime):
-            value = section[option]
-        elif isinstance(vtype, fields.Float):
-            value = section.getfloat(option)
-        elif isinstance(vtype, fields.Int):
-            value = section.getint(option)
-        elif isinstance(vtype, fields.Str):
-            value = section[option]
-        else:
-            value = section[option]
-        value = vtype.from_obj(value)
-    else:
-        value = section[option]
+def _loadobj(field, value) -> Any:
+    if isinstance(field, fields.Field):
+        value = field.from_obj(value)
     return value
 
 

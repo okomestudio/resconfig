@@ -1,7 +1,5 @@
 import re
 from datetime import datetime
-from datetime import timedelta
-from datetime import timezone
 from io import StringIO
 
 import pytest
@@ -9,7 +7,7 @@ import pytest
 from resconfig.io import toml
 
 from .bases import BaseTestIODump
-from .bases import BaseTestLoad
+from .bases import BaseTestIOLoad
 
 content = """
 title = "TOML Example"
@@ -44,48 +42,48 @@ hosts = [
 
 [extras]
 nested.key.example = "foobar"
+
+[section]
+bool = true
+datetime = 2020-01-02T20:00:00.000000
+float = 3.14
+int = 255
+str = "foo bar"
+nullable = "null"
+custom = 3
 """
 
 
-@pytest.fixture
-def stream():
-    yield StringIO(content)
-
-
-@pytest.fixture
-def loaded(stream):
-    yield toml.load(stream)
-
-
-@pytest.fixture
-def dumped(loaded, stream):
-    toml.dump(loaded, stream)
-    stream.seek(0)
-    yield stream.read()
-
-
-class TestLoad(BaseTestLoad):
+class TestLoad(BaseTestIOLoad):
     module = toml
+
+    @pytest.fixture
+    def loaded(self):
+        yield toml.load(StringIO(content), schema=self.schema)
 
     def test_no_section(self, loaded):
         assert loaded["title"] == "TOML Example"
 
     def test_section(self, loaded):
-        assert "owner" in loaded
+        assert "section" in loaded
 
-    def test_string(self, loaded):
-        assert loaded["owner"]["name"] == "Tom Preston-Werner"
+    def test_bool(self, loaded):
+        assert loaded["section"]["bool"] is True
 
     def test_datetime(self, loaded):
-        assert loaded["owner"]["dob"] == datetime(
-            1979, 5, 27, 7, 32, tzinfo=timezone(timedelta(hours=-8))
-        )
+        assert loaded["section"]["datetime"] == datetime(2020, 1, 2, 20)
 
-    def test_integer(self, loaded):
-        assert loaded["database"]["connection_max"] == 5000
+    def test_custom(self, loaded):
+        assert loaded["section"]["custom"] == 3
 
-    def test_boolean(self, loaded):
-        assert loaded["database"]["enabled"] is True
+    def test_int(self, loaded):
+        assert loaded["section"]["int"] == 255
+
+    def test_nullable(self, loaded):
+        assert loaded["section"]["nullable"] is None
+
+    def test_str(self, loaded):
+        assert loaded["section"]["str"] == "foo bar"
 
     def test_array(self, loaded):
         assert loaded["database"]["ports"] == [8001, 8001, 8002]
@@ -120,11 +118,11 @@ class TestDump(BaseTestIODump):
     def test_float(self, dumped):
         assert "float = 3.14\n" in dumped
 
-    def test_integer(self, dumped):
+    def test_int(self, dumped):
         assert "int = 255\n" in dumped
 
     def test_nullable(self, dumped):
         assert "nullable" not in dumped
 
-    def test_string(self, dumped):
+    def test_str(self, dumped):
         assert 'str = "foo bar"\n' in dumped

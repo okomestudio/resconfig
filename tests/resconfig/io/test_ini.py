@@ -3,14 +3,11 @@ from datetime import datetime
 from io import StringIO
 
 import pytest
-from dateutil.parser import parse
 
-from resconfig import fields
 from resconfig.io import ini
-from resconfig.ondict import ONDict
 
 from .bases import BaseTestIODump
-from .bases import BaseTestLoad
+from .bases import BaseTestIOLoad
 
 content = """
 [DEFAULT]
@@ -30,55 +27,65 @@ ForwardX11 = no
 Key : Value
 foo.bar = baz qux
 dt = 2020-01-02T20:00:00.000000
+
+[section]
+bool = true
+datetime = 2020-01-02T20:00:00.000000
+float = 3.14
+int = 255
+str = foo bar
+nullable = null
+custom = 3
 """
 
 
-@pytest.fixture
-def spec():
-    spec = {"extras section": {"dt": fields.Datetime(datetime.now())}}
-    yield ONDict(spec)
-
-
-@pytest.fixture
-def stream():
-    yield StringIO(content)
-
-
-@pytest.fixture
-def loaded(stream):
-    yield ini.load(stream)
-
-
-@pytest.fixture
-def cast(loaded):
-    loaded["extras section"]["dt"] = parse(loaded["extras section"]["dt"])
-    yield loaded
-
-
-class TestLoad(BaseTestLoad):
+class TestLoad(BaseTestIOLoad):
     module = ini
 
-    def test_default_pass_through(self, loaded):
-        assert loaded[r"bitbucket\.org"]["serveraliveinterval"] == "45"
+    @pytest.fixture
+    def loaded(self):
+        yield ini.load(StringIO(content), schema=self.schema)
 
-    def test_section(self, loaded):
-        assert r"bitbucket\.org" in loaded
-
-    def test_section_with_spaces(self, loaded):
-        assert "extras section" in loaded
-
-    def test_integer(self, loaded):
-        assert loaded[r"bitbucket\.org"]["compressionlevel"] == "9"
-
-    def test_string(self, loaded):
-        assert loaded[r"bitbucket\.org"]["user"] == "hg"
-        assert loaded[r"extras section"][r"foo\.bar"] == "baz qux"
+    @pytest.mark.parametrize("key", ["section", r"bitbucket\.org", "extras section"])
+    def test_section(self, loaded, key):
+        assert key in loaded
 
     def test_bool(self, loaded):
-        assert loaded[r"bitbucket\.org"]["compression"] == "yes"
+        assert loaded["section.bool"] is True
 
-    def test_colon(self, loaded):
-        assert loaded["extras section"]["key"] == "Value"
+    def test_custom(self, loaded):
+        assert loaded["section.custom"] == "3"
+
+    def test_datetime(self, loaded):
+        assert loaded["section.datetime"] == datetime(2020, 1, 2, 20, 0, 0)
+
+    def test_float(self, loaded):
+        assert loaded["section.float"] == 3.14
+
+    def test_int(self, loaded):
+        assert loaded["section.int"] == 255
+
+    def test_nullable(self, loaded):
+        assert loaded["section.nullable"] is None
+
+    def test_str(self, loaded):
+        assert loaded["section.str"] == "foo bar"
+
+    # def test_default_pass_through(self, loaded):
+    #     assert loaded[r"bitbucket\.org"]["serveraliveinterval"] == "45"
+
+    # def test_integer(self, loaded):
+    #     assert loaded[r"bitbucket\.org"]["compressionlevel"] == "9"
+
+    # def test_string(self, loaded):
+    #     assert loaded[r"bitbucket\.org"]["user"] == "hg"
+    #     assert loaded[r"extras section"][r"foo\.bar"] == "baz qux"
+
+    # def test_bool(self, loaded):
+    #     assert loaded[r"bitbucket\.org"]["compression"] == "yes"
+
+    # def test_colon(self, loaded):
+    #     assert loaded["extras section"]["key"] == "Value"
 
 
 class TestDump(BaseTestIODump):

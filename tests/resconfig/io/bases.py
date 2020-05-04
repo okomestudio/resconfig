@@ -7,15 +7,6 @@ from resconfig.fields import extract_values
 from resconfig.ondict import ONDict
 
 
-class BaseTestLoad:
-    module = None
-
-    def test_empty(self):
-        stream = StringIO("")
-        loaded = self.module.load(stream)
-        assert loaded == {}, "Blank file should load as an empty dict"
-
-
 class CustomField(fields.Field):
     @classmethod
     def from_obj(cls, value):
@@ -24,6 +15,28 @@ class CustomField(fields.Field):
     @classmethod
     def to_str(cls, value):
         return "by custom"
+
+
+class BaseTestIOLoad:
+    module = None
+    schema = ONDict(
+        {
+            "section": {
+                "bool": fields.Bool(),
+                "datetime": fields.Datetime(),
+                "float": fields.Float(),
+                "int": fields.Int(),
+                "str": fields.Str(),
+                "nullable": fields.NullableInt(),
+                "custom": CustomField(0),
+            }
+        }
+    )
+
+    def test_empty(self):
+        stream = StringIO("")
+        loaded = self.module.load(stream)
+        assert loaded == {}, "Blank file should load as an empty dict"
 
 
 class BaseTestIODump:

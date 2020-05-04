@@ -2,6 +2,7 @@ from collections.abc import MutableMapping
 from json import dump as _dump
 from json import load as _load
 from json.decoder import JSONDecodeError
+from logging import getLogger
 
 from .. import fields
 from ..ondict import ONDict
@@ -10,6 +11,8 @@ from ..typing import Any
 from ..typing import Optional
 from ..typing import Union
 from .utils import escape_dot
+
+log = getLogger(__name__)
 
 
 def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
@@ -36,6 +39,7 @@ def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
     try:
         content = _load(f)
     except JSONDecodeError:
+        log.exception("Load error")
         content = {}
 
     def _walk(d, schema):

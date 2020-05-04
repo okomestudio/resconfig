@@ -1,6 +1,5 @@
 from datetime import datetime
 from functools import wraps
-from types import new_class
 
 from dateutil.parser import parse as dtparse
 
@@ -17,23 +16,20 @@ def checktype(f):
     return deco
 
 
-def Nullable(field_type):
-    class _Nullable(field_type):
-        default = None
+class Nullable:
+    default = None
 
-        @classmethod
-        def from_obj(cls, value):
-            if value is None or value == "null":
-                return None
-            return super().from_obj(value)
+    @classmethod
+    def from_obj(cls, value):
+        if value is None or value == "null":
+            return None
+        return super().from_obj(value)
 
-        @classmethod
-        def to_str(cls, value):
-            if value is None:
-                return "null"
-            return super().to_str(value)
-
-    return new_class("Nullable" + field_type.__name__, (_Nullable, field_type))
+    @classmethod
+    def to_str(cls, value):
+        if value is None:
+            return "null"
+        return super().to_str(value)
 
 
 class Field:
@@ -102,11 +98,13 @@ class Str(Field):
     default = ""
 
 
-NullableBool = Nullable(Bool)
-NullableDatetime = Nullable(Datetime)
-NullableFloat = Nullable(Float)
-NullableInt = Nullable(Int)
-NullableStr = Nullable(Str)
+# fmt: off
+class NullableBool(Nullable, Bool): pass
+class NullableDatetime(Nullable, Datetime): pass
+class NullableFloat(Nullable, Float): pass
+class NullableInt(Nullable, Int): pass
+class NullableStr(Nullable, Str): pass
+# fmt: on
 
 
 def extract_values(d: ONDict) -> ONDict:
