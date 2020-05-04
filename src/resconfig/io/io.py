@@ -1,5 +1,3 @@
-from copy import deepcopy
-
 from ..ondict import ONDict
 from ..typing import FilePath
 from ..typing import List
@@ -12,11 +10,9 @@ from .paths import YAMLPath
 from .utils import ensure_path
 
 
-def _read_as_dict(filename: ConfigPath) -> ONDict:
-    return ONDict(filename.load())
-
-
-def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDict:
+def read_from_files_as_dict(
+    paths: List[FilePath], merge: bool = False, schema=None
+) -> ONDict:
     """Read the config from a file(s) as an :class:`ONDict`.
 
     How the config is constructed depends on the ``merge`` flag. If :obj:`True`, the
@@ -39,7 +35,7 @@ def read_from_files_as_dict(paths: List[FilePath], merge: bool = False) -> ONDic
         if path.is_file():
             if not isinstance(path, ConfigPath):
                 path = ConfigPath.from_extension(path)
-            content = _read_as_dict(path)
+            content = path.load(schema)
             d.merge(content)
             if not merge:
                 break
@@ -62,10 +58,10 @@ class IO:
             paths: A list of config file paths.
             merge: The flag for the merge mode; see the function description.
         """
-        self.update(read_from_files_as_dict(paths, merge))
+        self.update(read_from_files_as_dict(paths, merge, self._default))
 
     def __update_from_file(self, filename: ConfigPath):
-        self.update(_read_as_dict(filename))
+        self.update(filename.load(self._default))
 
     def update_from_file(self, filename: FilePath):
         """Update config from the file.
@@ -93,9 +89,7 @@ class IO:
         self.__update_from_file(YAMLPath(filename))
 
     def __save(self, filename: ConfigPath):
-        d = deepcopy(self._conf)
-        self._schema.unapply_all(d)
-        filename.dump(d)
+        filename.dump(self._conf, schema=self._default)
 
     @experimental
     def save_to_file(self, filename: FilePath):

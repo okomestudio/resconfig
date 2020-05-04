@@ -6,7 +6,6 @@ from unittest.mock import patch
 import pytest
 
 from resconfig import ResConfig
-from resconfig.io.io import _read_as_dict
 from resconfig.io.paths import ConfigPath
 from resconfig.io.paths import INIPath
 from resconfig.io.paths import JSONPath
@@ -19,7 +18,7 @@ class TestReadAsDict:
         expected = {"a": {"b": "1"}}
         conf = ResConfig(expected)
         conf.save_to_file(filename)
-        content = _read_as_dict(ConfigPath.from_extension(filename))
+        content = ConfigPath.from_extension(filename).load()
         assert isinstance(content, dict)
         assert content == expected
 
@@ -69,7 +68,7 @@ class Base:
         path = self.config_path_type(filename)
         with patch.object(path, "dump") as dump:
             conf._IO__save(path)
-            dump.assert_called_with(conf._conf)
+            dump.assert_called_with(conf._conf, schema=conf._default)
 
     def test_save_to_filetype(self, filename):
         conf = ResConfig()

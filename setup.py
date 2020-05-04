@@ -31,7 +31,7 @@ license = meta("license")
 readme = fread("README.rst")
 
 
-requires = []
+requires = ["python-dateutil>=2.8.1"]
 toml_requires = ["toml>=0.10.0"]
 yaml_requires = ["PyYAML>=5.3.1"]
 

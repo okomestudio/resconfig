@@ -1,3 +1,13 @@
+from collections.abc import MutableMapping
+
+from .. import fields
+from ..ondict import ONDict
+from ..typing import IO
+from ..typing import Any
+from ..typing import Optional
+from ..typing import Union
+from .utils import escape_dot
+
 try:
     from toml import dumps as _dump
     from toml import loads as _load
@@ -5,9 +15,44 @@ except ImportError:
     _dump = _load = None
 
 
-def load(f):
-    return _load(f.read())
+def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
+    schema = schema or {}
+    con = ONDict()
+    con._create = True
+    for key in list(content.allkeys()):
+        con[key] = _dumpobj(content[key], schema.get(key))
+    f.write(_dump(con.asdict()))
 
 
-def dump(content, f):
-    f.write(_dump(dict(content)))
+def _dumpobj(value, field) -> Any:
+    if isinstance(field, fields.Field):
+        if not isinstance(
+            field, (fields.Bool, fields.Datetime, fields.Float, fields.Int, fields.Str)
+        ):
+            value = field.to_str(value)
+    return value
+
+
+def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
+    content = _load(f.read())
+
+    def _walk(d, schema):
+        if not isinstance(d, MutableMapping):
+            return _loadobj(schema, d)
+        for key in list(d.keys()):
+            ekey = escape_dot(key)
+            d[key] = _walk(d[key], schema.get(ekey, {}))
+            if ekey != key:
+                d[ekey] = d[key]
+                del d[key]
+        return d
+
+    _walk(content, schema or {})
+
+    return ONDict(content)
+
+
+def _loadobj(field: Union[fields.Field, Any], value: Any) -> Any:
+    if isinstance(field, (fields.Field)):
+        value = field.from_obj(value)
+    return value

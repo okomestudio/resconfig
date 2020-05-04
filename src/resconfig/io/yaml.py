@@ -1,4 +1,8 @@
+from .. import fields
 from ..ondict import ONDict
+from ..typing import IO
+from ..typing import Any
+from ..typing import Optional
 
 try:
     import yaml
@@ -6,20 +10,26 @@ except ImportError:
     yaml = None
 
 
-def dump(data, stream, **kwargs):
-    class _Dumper(yaml.Dumper):
-        pass
-
-    def _dict_representer(dumper, data):
-        return dumper.represent_mapping(
-            yaml.resolver.BaseResolver.DEFAULT_MAPPING_TAG, data.items()
-        )
-
-    _Dumper.add_representer(ONDict, _dict_representer)
-
-    yaml.dump(data, stream, _Dumper, **kwargs)
+def dump(content: ONDict, f: IO, schema: Optional[ONDict] = None):
+    schema = schema or {}
+    con = ONDict()
+    con._create = True
+    for key in list(content.allkeys()):
+        con[key] = _dumpobj(content[key], schema.get(key))
+    yaml.dump(con.asdict(), f)
 
 
-def load(stream, **kwargs):
-    content = yaml.load(stream, yaml.FullLoader, **kwargs)
-    return content if content else {}
+def _dumpobj(value, field) -> Any:
+    if isinstance(field, fields.Field):
+        if isinstance(field, (fields.Bool, fields.Float, fields.Int, fields.Str)):
+            pass
+        elif isinstance(field, (fields.Datetime,)):
+            value = field.to_str(value)
+        else:
+            value = field.to_str(value)
+    return value
+
+
+def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
+    content = yaml.load(f, yaml.FullLoader)
+    return ONDict(content if content else {})
