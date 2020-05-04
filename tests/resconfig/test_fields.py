@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timezone
 
 import pytest
 
@@ -37,14 +38,17 @@ class TestBool(Base):
 
 class TestDatetime(Base):
     field_type = Datetime
-    to_str_expected = "1969-12-31T16:00:00"
+    to_str_expected = "1970-01-01T00:00:00+00:00"
 
     @pytest.mark.parametrize(
         "obj, expected",
         [
-            (datetime.fromtimestamp(0), datetime.fromtimestamp(0)),
-            ("1969-12-31T16:00:00", datetime.fromtimestamp(0)),
-            (0, datetime.fromtimestamp(0)),
+            (
+                datetime.fromtimestamp(0, timezone.utc),
+                datetime.fromtimestamp(0, timezone.utc),
+            ),
+            ("1970-01-01T00:00:00+00:00", datetime.fromtimestamp(0, timezone.utc)),
+            (0, datetime.fromtimestamp(0, timezone.utc)),
         ],
     )
     def test_from_obj(self, field, obj, expected):
@@ -102,15 +106,18 @@ class TestNullableBool(BaseNullable):
 
 class TestNullableDatetime(BaseNullable):
     field_type = NullableDatetime
-    from_obj_expected = datetime.fromtimestamp(0)
-    to_str_expected = "1969-12-31T16:00:00"
+    from_obj_expected = datetime.fromtimestamp(0, timezone.utc)
+    to_str_expected = "1970-01-01T00:00:00+00:00"
 
     @pytest.mark.parametrize(
         "obj, expected",
         [
-            (datetime.fromtimestamp(0), datetime.fromtimestamp(0)),
-            ("1969-12-31T16:00:00", datetime.fromtimestamp(0)),
-            (0, datetime.fromtimestamp(0)),
+            (
+                datetime.fromtimestamp(0, timezone.utc),
+                datetime.fromtimestamp(0, timezone.utc),
+            ),
+            ("1970-01-01T00:00:00+00:00", datetime.fromtimestamp(0, timezone.utc)),
+            (0, datetime.fromtimestamp(0, timezone.utc)),
         ],
     )
     def test_from_obj(self, field, obj, expected):

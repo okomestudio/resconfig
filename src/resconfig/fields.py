@@ -1,4 +1,5 @@
 from datetime import datetime
+from datetime import timezone
 from functools import wraps
 
 from dateutil.parser import parse as dtparse
@@ -63,7 +64,7 @@ class Bool(Field):
 
 class Datetime(Field):
     ftype = datetime
-    default = datetime.fromtimestamp(0)
+    default = datetime.fromtimestamp(0, timezone.utc)
 
     @classmethod
     def from_obj(cls, value):
@@ -72,7 +73,7 @@ class Datetime(Field):
         elif isinstance(value, str):
             value = dtparse(value)
         elif isinstance(value, (float, int)):
-            value = datetime.fromtimestamp(value)
+            value = datetime.fromtimestamp(value, timezone.utc)
         else:
             raise ValueError(f"invalid value for datetime: {value!r}")
         return value
