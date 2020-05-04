@@ -41,10 +41,11 @@ def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
             return _loadobj(schema, d)
         for key in list(d.keys()):
             ekey = escape_dot(key)
-            _walk(d[key], schema.get(ekey, {}))
+            d[key] = _walk(d[key], schema.get(ekey, {}))
             if ekey != key:
                 d[ekey] = d[key]
                 del d[key]
+        return d
 
     _walk(content, schema or {})
 
@@ -52,10 +53,6 @@ def load(f: IO, schema: Optional[ONDict] = None) -> ONDict:
 
 
 def _loadobj(field: Union[fields.Field, Any], value: Any) -> Any:
-    # if isinstance(field, fields.Nullable) and value is None:
-    #    return value
-    if isinstance(
-        field, (fields.Bool, fields.Datetime, fields.Float, fields.Int, fields.Str)
-    ):
+    if isinstance(field, (fields.Field)):
         value = field.from_obj(value)
     return value

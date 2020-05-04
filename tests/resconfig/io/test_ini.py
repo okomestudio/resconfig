@@ -1,6 +1,5 @@
 import re
 from datetime import datetime
-from io import StringIO
 
 import pytest
 
@@ -41,10 +40,7 @@ custom = 3
 
 class TestLoad(BaseTestIOLoad):
     module = ini
-
-    @pytest.fixture
-    def loaded(self):
-        yield ini.load(StringIO(content), schema=self.schema)
+    content = content
 
     @pytest.mark.parametrize("key", ["section", r"bitbucket\.org", "extras section"])
     def test_section(self, loaded, key):

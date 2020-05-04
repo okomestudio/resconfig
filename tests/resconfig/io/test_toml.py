@@ -1,8 +1,5 @@
 import re
 from datetime import datetime
-from io import StringIO
-
-import pytest
 
 from resconfig.io import toml
 
@@ -56,10 +53,7 @@ custom = 3
 
 class TestLoad(BaseTestIOLoad):
     module = toml
-
-    @pytest.fixture
-    def loaded(self):
-        yield toml.load(StringIO(content), schema=self.schema)
+    content = content
 
     def test_no_section(self, loaded):
         assert loaded["title"] == "TOML Example"

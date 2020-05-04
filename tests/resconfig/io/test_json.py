@@ -1,5 +1,4 @@
 import re
-from io import StringIO
 
 import pytest
 
@@ -31,10 +30,7 @@ content = """
 
 class TestLoad(BaseTestIOLoad):
     module = json
-
-    @pytest.fixture
-    def loaded(self):
-        yield json.load(StringIO(content), schema=self.schema)
+    content = content
 
     @pytest.mark.parametrize("key", ["section", r"section.inter\.net.user"])
     def test_section(self, loaded, key):

@@ -19,6 +19,7 @@ class CustomField(fields.Field):
 
 class BaseTestIOLoad:
     module = None
+    content = None
     schema = ONDict(
         {
             "section": {
@@ -32,6 +33,10 @@ class BaseTestIOLoad:
             }
         }
     )
+
+    @pytest.fixture
+    def loaded(self):
+        yield self.module.load(StringIO(self.content), schema=self.schema)
 
     def test_empty(self):
         stream = StringIO("")

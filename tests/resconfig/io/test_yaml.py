@@ -1,7 +1,5 @@
 import re
-from io import StringIO
-
-import pytest
+from datetime import datetime
 
 from resconfig.io import yaml
 
@@ -10,54 +8,54 @@ from .bases import BaseTestIOLoad
 
 content = """
 ---
-str: str
-int: 10
-bool: true
-nullval: null
-array: [0, 1, 2]
-nested:
-  str: mystr
-  int: 10
+section:
+  bool: true
+  datetime: 2020-01-02T20:00:00.000000
+  float: 3.14
+  int: 255
+  str: foo bar
+  nullable: null
+  custom: 3
+  array: [0, 1, 2]
+  nested:
+    str: mystr
+    int: 10
 """
-
-
-@pytest.fixture
-def stream():
-    yield StringIO(content)
-
-
-@pytest.fixture
-def loaded(stream):
-    yield yaml.load(stream)
-
-
-@pytest.fixture
-def dumped(loaded, stream):
-    yaml.dump(loaded, stream)
-    stream.seek(0)
-    yield stream.read()
 
 
 class TestLoad(BaseTestIOLoad):
     module = yaml
+    content = content
 
-    def test_integer(self, loaded):
-        assert loaded["int"] == 10
-
-    def test_string(self, loaded):
-        assert loaded["str"] == "str"
+    def test_section(self, loaded):
+        assert "section" in loaded
 
     def test_bool(self, loaded):
-        assert loaded["bool"] is True
+        assert loaded["section"]["bool"] is True
 
-    def test_null(self, loaded):
-        assert loaded["nullval"] is None
+    def test_custom(self, loaded):
+        assert loaded["section"]["custom"] == 3
+
+    def test_datetime(self, loaded):
+        assert loaded["section"]["datetime"] == datetime(2020, 1, 2, 20)
+
+    def test_float(self, loaded):
+        assert loaded["section"]["float"] == 3.14
+
+    def test_int(self, loaded):
+        assert loaded["section"]["int"] == 255
+
+    def test_nullable(self, loaded):
+        assert loaded["section"]["nullable"] is None
+
+    def test_str(self, loaded):
+        assert loaded["section"]["str"] == "foo bar"
 
     def test_array(self, loaded):
-        assert loaded["array"] == [0, 1, 2]
+        assert loaded["section"]["array"] == [0, 1, 2]
 
     def test_nested(self, loaded):
-        assert loaded["nested"]["int"] == 10
+        assert loaded["section"]["nested"]["int"] == 10
 
 
 class TestDump(BaseTestIODump):
